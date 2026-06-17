@@ -22,6 +22,7 @@ export default async function PrintReportPage({ searchParams }: { searchParams: 
   await requireAuth();
   const reportFilters = filters(await searchParams);
   const report = await getReport(reportFilters);
+  const organization = process.env.REPORT_ORGANIZATION_NAME || "กลุ่มงานสถิติข้อมูลและสารสนเทศ";
 
   return (
     <main className="print-page">
@@ -30,7 +31,7 @@ export default async function PrintReportPage({ searchParams }: { searchParams: 
       </div>
       <header>
         <h1>รายงานสถิติการขอดูภาพจากกล้องวงจรปิด</h1>
-        <p>กลุ่มงานสถิติข้อมูลและสารสนเทศ</p>
+        <p>{organization}</p>
         <p>
           ช่วงวันที่ {formatThaiDate(reportFilters.startDate)} ถึง {formatThaiDate(reportFilters.endDate)}
         </p>
@@ -73,6 +74,18 @@ export default async function PrintReportPage({ searchParams }: { searchParams: 
           ))}
         </tbody>
       </table>
+      <section className="signature-block">
+        <div>
+          <p>ผู้จัดทำรายงาน</p>
+          <span />
+          <p>วันที่ ........../........../..........</p>
+        </div>
+        <div>
+          <p>ผู้ตรวจสอบ</p>
+          <span />
+          <p>วันที่ ........../........../..........</p>
+        </div>
+      </section>
       <script dangerouslySetInnerHTML={{ __html: "window.addEventListener('load',()=>setTimeout(()=>window.print(),250));" }} />
     </main>
   );

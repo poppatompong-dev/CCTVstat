@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/auth";
-import { getMasters, getSmartDefaults } from "@/lib/db";
+import { getLocationSuggestions, getMasters, getSmartDefaults } from "@/lib/db";
 import { todayInput } from "@/lib/dates";
 import { createRequestAction } from "@/app/actions";
 import { AppShell } from "@/components/AppShell";
@@ -11,9 +11,10 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function NewRequestPage({ searchParams }: { searchParams: SearchParams }) {
   await requireAuth();
-  const [masters, smartDefaults, params] = await Promise.all([
+  const [masters, smartDefaults, locationSuggestions, params] = await Promise.all([
     getMasters(),
     getSmartDefaults(),
+    getLocationSuggestions(),
     searchParams,
   ]);
   const defaultStatus = masters.statuses.find((row) => row.name === "รับคำร้องแล้ว") ?? masters.statuses[0];
@@ -33,6 +34,8 @@ export default async function NewRequestPage({ searchParams }: { searchParams: S
           action={createRequestAction}
           masters={masters}
           submitLabel="บันทึกและออกเลขคำร้อง"
+          locationSuggestions={locationSuggestions}
+          showDuplicateHint
           request={{
             id: 0,
             request_no: "",

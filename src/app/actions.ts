@@ -19,6 +19,12 @@ import type { MasterKind } from "@/lib/types";
 
 const allowedFileExt = new Set(["pdf", "jpg", "jpeg", "png", "doc", "docx"]);
 const blockedFileExt = new Set(["exe", "bat", "cmd", "js", "sh", "php", "html"]);
+const defaultMaxUploadBytes = 4 * 1024 * 1024;
+
+function maxUploadBytes() {
+  const value = Number(process.env.MAX_UPLOAD_BYTES || defaultMaxUploadBytes);
+  return Number.isFinite(value) && value > 0 ? value : defaultMaxUploadBytes;
+}
 
 function message(path: string, text: string, type: "ok" | "error" = "ok"): never {
   redirect(`${path}?${type}=${encodeURIComponent(text)}`);
@@ -67,8 +73,11 @@ export async function updateRequestAction(id: number, formData: FormData) {
   try {
     await updateRequest(id, formData);
   } catch (error) {
-    const text = error instanceof Error && error.message.includes("duplicate")
+    const errorMessage = error instanceof Error ? error.message : "";
+    const text = errorMessage.includes("requests_request_no_key")
       ? "เลขคำร้องซ้ำกับรายการที่มีอยู่แล้ว"
+      : errorMessage.includes("requests_fiscal_year_sequence_no_key")
+      ? "ลำดับเลขคำร้องในปีงบประมาณนี้ซ้ำกับรายการที่มีอยู่แล้ว"
       : "บันทึกไม่สำเร็จ กรุณาตรวจสอบข้อมูลอีกครั้ง";
     message(`/requests/${id}`, text, "error");
   }
@@ -117,6 +126,9 @@ export async function uploadAttachmentAction(requestId: number, requestNo: strin
 
   if (!(file instanceof File) || file.size === 0) {
     message(`/requests/${requestId}`, "กรุณาเลือกไฟล์", "error");
+  }
+  if (file.size > maxUploadBytes()) {
+    message(`/requests/${requestId}`, `ไฟล์มีขนาดเกิน ${(maxUploadBytes() / 1024 / 1024).toFixed(1)} MB`, "error");
   }
 
   const ext = fileExtension(file.name);

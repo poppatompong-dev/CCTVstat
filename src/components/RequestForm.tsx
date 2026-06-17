@@ -1,4 +1,5 @@
 import type { MasterRow, RequestRow } from "@/lib/types";
+import { DuplicateHint } from "@/components/DuplicateHint";
 import { RequestNumberPreview } from "@/components/RequestNumberPreview";
 
 export function RequestForm({
@@ -7,6 +8,8 @@ export function RequestForm({
   request,
   submitLabel,
   showRequestNo = false,
+  locationSuggestions = [],
+  showDuplicateHint = false,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   masters: {
@@ -17,6 +20,8 @@ export function RequestForm({
   request?: RequestRow;
   submitLabel: string;
   showRequestNo?: boolean;
+  locationSuggestions?: string[];
+  showDuplicateHint?: boolean;
 }) {
   const requesterTypes = masters.requesterTypes.filter((row) => row.is_active || row.id === request?.requester_type_id);
   const categories = masters.categories.filter((row) => row.is_active || row.id === request?.category_id);
@@ -79,8 +84,26 @@ export function RequestForm({
 
       <label className="field span-2">
         <span>สถานที่เกิดเหตุ</span>
-        <input name="location_text" defaultValue={request?.location_text ?? ""} placeholder="ไม่บังคับ" />
+        <input
+          name="location_text"
+          defaultValue={request?.location_text ?? ""}
+          placeholder="ไม่บังคับ"
+          list={locationSuggestions.length ? "location-suggestions" : undefined}
+        />
+        {locationSuggestions.length ? (
+          <datalist id="location-suggestions">
+            {locationSuggestions.map((value) => (
+              <option key={value} value={value} />
+            ))}
+          </datalist>
+        ) : null}
       </label>
+
+      {showDuplicateHint ? (
+        <div className="span-2">
+          <DuplicateHint />
+        </div>
+      ) : null}
 
       <label className="field span-2">
         <span>หมายเหตุ</span>

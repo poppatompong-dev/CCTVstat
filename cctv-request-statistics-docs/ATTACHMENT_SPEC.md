@@ -42,16 +42,15 @@
 `.exe`, `.bat`, `.cmd`, `.js`, `.sh`, `.php`, `.html`
 
 ## 7. ขนาดไฟล์
-ค่าเริ่มต้นแนะนำ: 10 MB ต่อไฟล์ และควรปรับได้จาก config
+ค่าเริ่มต้นสำหรับช่วงทดลองบน Vercel server upload: 4 MB ต่อไฟล์ (`MAX_UPLOAD_BYTES=4194304`) และควรปรับได้จาก config หากเปลี่ยนเป็น client upload หรือ infrastructure ที่รองรับไฟล์ใหญ่กว่า
 
-## 8. Folder Structure
+## 8. Blob Path Structure
 ```text
-uploads/
-  requests/
+cctv-requests/
     C69-0001/
-      C69-0001_20260616_143000_request-form.pdf
+    1780000000000-request-form.pdf
     C69-0002/
-      C69-0002_20260616_150000_request-form.jpg
+    1780000000000-request-form.jpg
 ```
 
 ## 9. File Naming
@@ -62,7 +61,9 @@ uploads/
 
 เก็บทั้ง:
 - `original_file_name`
-- `stored_file_name`
+- `blob_pathname`
+- `blob_url`
+- `download_url`
 
 หากมีการแก้เลขคำร้องภายหลัง ไม่ควร rename ไฟล์เดิมอัตโนมัติ ความสัมพันธ์ของไฟล์แนบต้องยึด `request_id` และ metadata เป็นหลัก เพื่อไม่ให้การแก้เลขกระทบไฟล์ที่ upload แล้ว
 
@@ -72,10 +73,11 @@ uploads/
 | request_id | คำร้องที่เกี่ยวข้อง |
 | evidence_type_id | ประเภทหลักฐาน |
 | original_file_name | ชื่อไฟล์เดิม |
-| stored_file_name | ชื่อไฟล์จัดเก็บ |
-| file_path | ตำแหน่งไฟล์ |
-| mime_type | MIME type |
-| file_size | ขนาดไฟล์ |
+| blob_pathname | path ใน Vercel Blob |
+| blob_url | URL จาก Blob SDK |
+| download_url | URL สำหรับดาวน์โหลด |
+| content_type | MIME type |
+| size_bytes | ขนาดไฟล์ |
 | note | หมายเหตุ |
 | uploaded_at | วันที่อัปโหลด |
 

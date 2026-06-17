@@ -496,6 +496,43 @@ export async function getSmartDefaults(): Promise<SmartDefaults> {
   };
 }
 
+export async function getLocationSuggestions(limit = 40) {
+  await ensureSchema();
+  const rows = await query<{ location_text: string }>(
+    `SELECT location_text
+     FROM requests
+     WHERE deleted_at IS NULL
+       AND location_text IS NOT NULL
+       AND LENGTH(TRIM(location_text)) >= 2
+     GROUP BY location_text
+     ORDER BY COUNT(*) DESC, MAX(created_at) DESC
+     LIMIT $1`,
+    [limit],
+  );
+  return rows.map((row) => row.location_text);
+}
+
+export async function findDuplicateHints(input: {
+  requestDate: string;
+  categoryId: number;
+  locationText: string;
+}) {
+  await ensureSchema();
+  const location = input.locationText.trim();
+  if (!input.requestDate || !input.categoryId || location.length < 2) return [];
+  return query<RequestRow>(
+    `${requestSelect}
+     WHERE r.deleted_at IS NULL
+       AND r.request_date = $1
+       AND r.category_id = $2
+       AND r.location_text ILIKE $3
+     GROUP BY r.id, rt.name, c.name, s.name, s.semantic_key
+     ORDER BY r.created_at DESC
+     LIMIT 3`,
+    [input.requestDate, input.categoryId, `%${location}%`],
+  );
+}
+
 export async function createRequest(form: FormData) {
   await ensureSchema();
   const requestDate = String(form.get("request_date") || "");

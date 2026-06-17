@@ -13,6 +13,7 @@ import {
 import { getAttachments, getMasters, getRequest } from "@/lib/db";
 import { AppShell } from "@/components/AppShell";
 import { CopyButton } from "@/components/CopyButton";
+import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
 import { Feedback } from "@/components/Feedback";
 import { PageHeader } from "@/components/PageHeader";
 import { RequestForm } from "@/components/RequestForm";
@@ -121,9 +122,13 @@ export default async function RequestDetailPage({
                     ดาวน์โหลด
                   </a>
                   <form action={deleteAttachmentAction.bind(null, request.id, attachment.id)}>
-                    <button className="icon-btn danger" type="submit" aria-label="ลบไฟล์แนบ">
+                    <ConfirmSubmitButton
+                      className="icon-btn danger"
+                      message="ต้องการลบไฟล์แนบนี้ใช่หรือไม่"
+                      ariaLabel="ลบไฟล์แนบ"
+                    >
                       <Trash2 size={16} />
-                    </button>
+                    </ConfirmSubmitButton>
                   </form>
                 </div>
               </div>
@@ -140,10 +145,13 @@ export default async function RequestDetailPage({
           <p>ระบบจะซ่อนรายการนี้จากการค้นหาและรายงาน แต่ไม่ reuse เลขคำร้องเดิม</p>
         </div>
         <form action={deleteRequestAction.bind(null, request.id)}>
-          <button className="btn danger" type="submit">
+          <ConfirmSubmitButton
+            className="btn danger"
+            message="ต้องการลบคำร้องนี้ใช่หรือไม่ ระบบจะซ่อนจากรายงานปกติและไม่นำเลขกลับมาใช้ซ้ำ"
+          >
             <Trash2 size={18} />
             ลบคำร้อง
-          </button>
+          </ConfirmSubmitButton>
         </form>
       </section>
     </AppShell>

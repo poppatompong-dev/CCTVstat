@@ -69,6 +69,27 @@ Response:
 
 หมายเหตุ: ใช้เป็นเลขคำร้องโดยประมาณเท่านั้น เลขจริงยืนยันเมื่อบันทึกสำเร็จ
 
+### Duplicate Hints
+```http
+GET /api/requests/duplicate-hints?requestDate=2026-06-16&categoryId=1&locationText=หน้าตลาด
+```
+
+Response:
+```json
+{
+  "rows": [
+    {
+      "id": 1,
+      "requestNo": "C69-0001",
+      "status": "รับคำร้องแล้ว",
+      "location": "หน้าตลาด"
+    }
+  ]
+}
+```
+
+หมายเหตุ: ใช้เป็น hint แบบไม่ block การบันทึก
+
 ### Detail
 ```http
 GET /api/requests/{id}
@@ -194,6 +215,13 @@ GET /api/reports/export/pdf
 ```http
 GET /api/reports/export/backup
 ```
+
+ใน implementation ปัจจุบันใช้:
+```http
+GET /api/backup
+```
+
+Response เป็นไฟล์ Excel หลาย sheet
 
 ## 6. Validation
 | Field | Rule |

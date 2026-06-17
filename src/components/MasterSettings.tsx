@@ -56,6 +56,9 @@ export function MasterSettings({
                 <input name="is_active" type="checkbox" defaultChecked={row.is_active} />
                 <span>เปิด</span>
               </label>
+              {row.semantic_key ? (
+                <span className="semantic-chip">{row.semantic_key}</span>
+              ) : null}
               <button className="btn small outline" type="submit">บันทึก</button>
             </form>
           ))}

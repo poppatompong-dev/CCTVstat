@@ -97,6 +97,7 @@ Column:
 
 ## 7. Export Backup
 ควร export เป็น Excel หลาย sheet:
+- metadata
 - requests
 - requester_types
 - categories

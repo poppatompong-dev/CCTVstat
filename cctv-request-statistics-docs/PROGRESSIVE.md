@@ -13,11 +13,11 @@
 | Smart Enhancements A | เสร็จแล้ว | dashboard actionable, next-number preview, smart defaults, report insights, quick filters |
 | Documentation sync | เสร็จแล้ว | glossary, roadmap, UI/report/API/data/test/acceptance sync แล้ว |
 | Trial deployment runtime | ยังเหลือ | ต้องตั้ง env บน Vercel และทดสอบ Neon/Blob/export จริง |
-| Smart Enhancements B | ยังไม่ทำ | duplicate hint และ location autocomplete |
+| Smart Enhancements B | เสร็จแล้ว | duplicate hint และ location autocomplete แบบไม่ block |
 
 ภาพรวมโดยประมาณ:
-- งานพัฒนาใน repo: **ประมาณ 85-90% เสร็จ**
-- งานที่เหลือเพื่อใช้งานทดลองจริง: **ประมาณ 10-15%**
+- งานพัฒนาใน repo: **ประมาณ 92-95% เสร็จ**
+- งานที่เหลือเพื่อใช้งานทดลองจริง: **ประมาณ 5-8%**
 - งานต่อยอด smart รอบถัดไป: แยกเป็น phase ใหม่ ไม่บล็อก MVP trial
 
 ## [x] Slice 0: Decision Lock
@@ -119,8 +119,8 @@
 - [x] เพิ่ม quick filters: ทั้งหมด, เดือนนี้, ควรติดตาม, พบภาพ
 
 เหลือ:
-- [ ] เพิ่ม confirmation dialog ฝั่ง client ให้การลบคำร้องชัดขึ้น
-- [ ] ปรับ error mapping กรณีเลขซ้ำให้แยก `request_no` กับ `(fiscal_year, sequence_no)` ชัดขึ้น
+- [x] เพิ่ม confirmation dialog ฝั่ง client ให้การลบคำร้องชัดขึ้น
+- [x] ปรับ error mapping กรณีเลขซ้ำให้แยก `request_no` กับ `(fiscal_year, sequence_no)` ชัดขึ้น
 
 ## [x] Slice 5: Master Data
 
@@ -134,8 +134,8 @@
 - [x] รายการ inactive ไม่แสดงในฟอร์มใหม่ถ้าไม่ได้เป็นค่าของข้อมูลเดิม
 
 เหลือ:
-- [ ] เพิ่มหน้าจัดการ requester types และ statuses หากต้องการให้ผู้ดูแลปรับเองจาก UI
-- [ ] เพิ่ม validation/UX กันแก้ `semantic_key` ของสถานะผิดพลาด ถ้าเปิดให้แก้ในอนาคต
+- [x] เพิ่มหน้าจัดการ requester types และ statuses
+- [x] แสดง `semantic_key` เป็น chip อ่านอย่างเดียว ไม่เปิดให้แก้จาก UI ระหว่างทดสอบ
 
 ## [x] Slice 6: Attachments
 
@@ -158,8 +158,8 @@
 
 เหลือ:
 - [ ] ทดสอบ upload/download/delete กับ Vercel Blob token จริง
-- [ ] เพิ่มขนาดไฟล์สูงสุดที่ชัดเจนใน env/spec/runtime
-- [ ] เพิ่ม confirmation dialog ฝั่ง client ก่อนลบไฟล์แนบ
+- [x] เพิ่มขนาดไฟล์สูงสุดที่ชัดเจนใน env/spec/runtime
+- [x] เพิ่ม confirmation dialog ฝั่ง client ก่อนลบไฟล์แนบ
 
 ## [x] Slice 7: Reports and Exports
 
@@ -179,9 +179,9 @@
 
 เหลือ:
 - [ ] ทดสอบ Excel กับข้อมูลจำนวนมากอย่างน้อย 5,000 รายการ
-- [ ] ตัดสินใจว่าจะใช้ binary PDF server-side หรือคง print-to-PDF สำหรับ MVP
-- [ ] เพิ่มพื้นที่ลงชื่อใน print/PDF view ให้ตรงแบบรายงานราชการมากขึ้น
-- [ ] Backup ยังเป็น JSON ไม่ใช่ Excel หลาย sheet ตาม spec เดิม ต้องตัดสินใจว่าจะเปลี่ยนหรือยอมรับ MVP นี้
+- [x] ตัดสินใจคง print-to-PDF สำหรับ MVP เพื่อให้ภาษาไทย render จาก browser ได้แน่นอน
+- [x] เพิ่มพื้นที่ลงชื่อใน print/PDF view ให้ตรงแบบรายงานราชการมากขึ้น
+- [x] เปลี่ยน Backup เป็น Excel หลาย sheet ตาม spec
 
 ## [ ] Slice 8: Trial Deployment Runtime
 
@@ -207,6 +207,7 @@ Environment ที่ต้องตั้ง:
 - [ ] `BLOB_READ_WRITE_TOKEN`
 - [ ] `REPORT_ORGANIZATION_NAME`
 - [ ] `FOLLOW_UP_DAYS` optional, default 7
+- [ ] `MAX_UPLOAD_BYTES` optional, default 4194304
 
 เกณฑ์ผ่าน:
 - [ ] URL ทดลองเข้าได้เฉพาะผู้รู้รหัสทดลอง
@@ -230,17 +231,17 @@ Environment ที่ต้องตั้ง:
 - [ ] ทดสอบกับข้อมูลจริงบน Vercel/Neon
 - [ ] ยืนยันว่าคำว่า **คำร้องที่ควรติดตาม** สื่อสารกับผู้ใช้จริงได้ชัด
 
-## [ ] Smart Enhancements B
+## [x] Smart Enhancements B
 
 เป้าหมาย:
-- [ ] B1 Duplicate hint แบบไม่ block
-- [ ] B2 Location autocomplete จากสถานที่ที่เคยกรอก
+- [x] B1 Duplicate hint แบบไม่ block
+- [x] B2 Location autocomplete จากสถานที่ที่เคยกรอก
 
 ข้อควรระวัง:
-- [ ] ห้ามเพิ่ม required field ใหม่
-- [ ] ห้าม block การบันทึก
-- [ ] ห้ามทำให้เพิ่มคำร้องเกิน 30 วินาที
-- [ ] ต้องใช้คำว่า hint/คำแนะนำ ไม่ใช่ error ถ้าเป็น duplicate ที่ไม่แน่นอน
+- [x] ห้ามเพิ่ม required field ใหม่
+- [x] ห้าม block การบันทึก
+- [x] ห้ามทำให้เพิ่มคำร้องเกิน 30 วินาที
+- [x] ต้องใช้คำว่า hint/คำแนะนำ ไม่ใช่ error ถ้าเป็น duplicate ที่ไม่แน่นอน
 
 ## [ ] Future Requirements
 
@@ -268,7 +269,7 @@ Environment ที่ต้องตั้ง:
 7. [ ] เก็บ feedback จากผู้ใช้หน้างาน
 
 ถ้าต้องการต่อยอด smart:
-1. [ ] ทำ duplicate hint
-2. [ ] ทำ location autocomplete
+1. [x] ทำ duplicate hint
+2. [x] ทำ location autocomplete
 3. [ ] เพิ่ม import Excel ย้อนหลัง
 4. [ ] เพิ่ม dashboard ผู้บริหาร

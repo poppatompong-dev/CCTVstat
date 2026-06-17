@@ -5,8 +5,10 @@ import {
   FilePlus2,
   FolderKanban,
   LayoutDashboard,
+  ListChecks,
   LogOut,
   Tags,
+  UsersRound,
 } from "lucide-react";
 import Link from "next/link";
 import { logoutAction } from "@/app/actions";
@@ -16,7 +18,9 @@ const nav = [
   { href: "/requests/new", label: "เพิ่มคำร้อง", icon: FilePlus2 },
   { href: "/requests", label: "ค้นหา/แก้ไข", icon: ClipboardList },
   { href: "/reports", label: "รายงาน", icon: BarChart3 },
+  { href: "/settings/requester-types", label: "ประเภทผู้ขอ", icon: UsersRound },
   { href: "/settings/categories", label: "หมวดหมู่", icon: FolderKanban },
+  { href: "/settings/statuses", label: "สถานะ", icon: ListChecks },
   { href: "/settings/evidence-types", label: "หลักฐาน", icon: Tags },
 ];
 
