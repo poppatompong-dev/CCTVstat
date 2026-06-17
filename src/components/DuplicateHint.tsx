@@ -15,9 +15,10 @@ export function DuplicateHint() {
 
   useEffect(() => {
     const dateInput = document.querySelector<HTMLInputElement>('input[name="request_date"]');
-    const categoryInput = document.querySelector<HTMLSelectElement>('select[name="category_id"]');
+    const categoryInputs = Array.from(document.querySelectorAll<HTMLInputElement>('input[name="category_id"]'));
+    const categorySelect = document.querySelector<HTMLSelectElement>('select[name="category_id"]');
     const locationInput = document.querySelector<HTMLInputElement>('input[name="location_text"]');
-    if (!dateInput || !categoryInput || !locationInput) return;
+    if (!dateInput || (!categoryInputs.length && !categorySelect) || !locationInput) return;
 
     let timer: number | null = null;
     let controller: AbortController | null = null;
@@ -26,7 +27,7 @@ export function DuplicateHint() {
       if (timer) window.clearTimeout(timer);
       timer = window.setTimeout(() => {
         const requestDate = dateInput.value;
-        const categoryId = categoryInput.value;
+        const categoryId = categoryInputs.find((input) => input.checked)?.value ?? categorySelect?.value ?? "";
         const locationText = locationInput.value.trim();
         if (!requestDate || !categoryId || locationText.length < 2) {
           setRows([]);
@@ -46,7 +47,8 @@ export function DuplicateHint() {
     };
 
     dateInput.addEventListener("change", run);
-    categoryInput.addEventListener("change", run);
+    categorySelect?.addEventListener("change", run);
+    categoryInputs.forEach((input) => input.addEventListener("change", run));
     locationInput.addEventListener("input", run);
     run();
 
@@ -54,7 +56,8 @@ export function DuplicateHint() {
       if (timer) window.clearTimeout(timer);
       controller?.abort();
       dateInput.removeEventListener("change", run);
-      categoryInput.removeEventListener("change", run);
+      categorySelect?.removeEventListener("change", run);
+      categoryInputs.forEach((input) => input.removeEventListener("change", run));
       locationInput.removeEventListener("input", run);
     };
   }, []);

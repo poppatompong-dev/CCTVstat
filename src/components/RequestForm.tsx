@@ -1,4 +1,5 @@
 import type { MasterRow, RequestRow } from "@/lib/types";
+import { CategoryPicker } from "@/components/CategoryPicker";
 import { DuplicateHint } from "@/components/DuplicateHint";
 import { RequestNumberPreview } from "@/components/RequestNumberPreview";
 
@@ -59,17 +60,7 @@ export function RequestForm({
         </select>
       </label>
 
-      <label className="field">
-        <span>หมวดหมู่</span>
-        <select name="category_id" defaultValue={request?.category_id} required>
-          <option value="">เลือกหมวดหมู่</option>
-          {categories.map((row) => (
-            <option key={row.id} value={row.id}>
-              {row.name}
-            </option>
-          ))}
-        </select>
-      </label>
+      <CategoryPicker categories={categories} selectedId={request?.category_id} />
 
       <label className="field">
         <span>สถานะ</span>
