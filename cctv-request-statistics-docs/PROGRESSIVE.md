@@ -1,200 +1,274 @@
 # PROGRESSIVE.md
 
-# แผนพัฒนาแบบไล่ระดับ
+# Checklist แผนพัฒนาแบบไล่ระดับ
 
-เอกสารนี้ใช้กำหนดลำดับการทำระบบ CCTV Request Statistics System ให้ค่อย ๆ ใช้งานได้จริงบน cloud free tier โดยไม่ทำให้ MVP ใหญ่เกินจำเป็น
+เอกสารนี้ใช้ดูสถานะงานของ CCTVStat แบบไล่ระดับว่าอะไรทำแล้ว อะไรยังเหลือ และเหลือประมาณไหน โดยแยก **งานที่เสร็จในโค้ดแล้ว** ออกจาก **งานที่ต้องยืนยันบน runtime จริง** เช่น Vercel, Neon และ Vercel Blob
 
-## 1. หลักการ
+## สถานะรวมล่าสุด
 
-| หลักการ | ความหมาย |
-|---|---|
-| ใช้งานได้เร็ว | เจ้าหน้าที่ต้องบันทึกคำร้องและได้เลขอ้างอิงก่อน |
-| Cloud-first | ช่วงทดลองใช้ไม่มีเครื่อง server ภายใน จึงต้องรองรับ Vercel และ Neon |
-| เก็บเท่าที่จำเป็น | ไม่เพิ่ม field ข้อมูลส่วนบุคคลที่ไม่จำเป็นต่อสถิติ |
-| แนบไฟล์เป็น optional | คำร้องต้องบันทึกได้แม้ยังไม่มีหลักฐานแนบ |
-| รายงานถูกต้องหลายมิติ | รายงานต้อง filter และสรุปได้ตามช่วงวันที่ หมวดหมู่ ประเภทผู้ขอ และสถานะ |
-| UI สวยงามแต่ไม่ช้า | หน้าจอต้องอ่านง่าย ดูเป็นงานราชการสมัยใหม่ และยังบันทึกคำร้องได้เร็ว |
-| ใช้งานหน้างานได้ | มือถือและแท็บเล็ตต้องเพิ่มคำร้อง ค้นหา และดูสถานะได้สะดวก |
-| ประสิทธิภาพเพียงพอ | ค้นหาและ export ต้องรองรับข้อมูลหลักพันรายการในช่วงทดลอง |
-| ตัด scope ที่เสี่ยง | ไม่รับวิดีโอ CCTV และไม่ทำ case management ใน version 1 |
+| หมวด | สถานะ | หมายเหตุ |
+|---|---|---|
+| Product decisions | เสร็จแล้ว | scope, stack, access gate, soft delete, backfill validation ตกลงแล้ว |
+| MVP application code | เสร็จแล้ว | build/lint ผ่าน และ push ขึ้น GitHub แล้ว |
+| Smart Enhancements A | เสร็จแล้ว | dashboard actionable, next-number preview, smart defaults, report insights, quick filters |
+| Documentation sync | เสร็จแล้ว | glossary, roadmap, UI/report/API/data/test/acceptance sync แล้ว |
+| Trial deployment runtime | ยังเหลือ | ต้องตั้ง env บน Vercel และทดสอบ Neon/Blob/export จริง |
+| Smart Enhancements B | ยังไม่ทำ | duplicate hint และ location autocomplete |
 
-## 2. Progressive Slices
+ภาพรวมโดยประมาณ:
+- งานพัฒนาใน repo: **ประมาณ 85-90% เสร็จ**
+- งานที่เหลือเพื่อใช้งานทดลองจริง: **ประมาณ 10-15%**
+- งานต่อยอด smart รอบถัดไป: แยกเป็น phase ใหม่ ไม่บล็อก MVP trial
 
-### Slice 0: Decision Lock
-
-เป้าหมาย:
-- ยืนยัน stack สำหรับช่วงทดลอง
-- ยืนยันวิธีป้องกันการเข้าถึงเมื่อ deploy บน public URL
-- ยืนยันวิธีเก็บไฟล์แนบบน cloud
-
-สถานะที่ต้องตกผลึกก่อน implement:
-- App hosting: Vercel
-- Database: Neon PostgreSQL
-- File storage: Vercel Blob Private Storage
-- Access control: shared password access gate ด้วย `APP_PASSWORD` และ session cookie
-
-### Slice 1: Project Skeleton
+## [x] Slice 0: Decision Lock
 
 เป้าหมาย:
-- สร้าง Next.js + TypeScript project
-- ตั้งค่า environment variables
-- เตรียม connection ไป Neon แบบ lazy initialization
-- เตรียมโครงสร้างหน้าหลักภาษาไทย
+- [x] ยืนยัน stack สำหรับช่วงทดลอง
+- [x] ยืนยันวิธีป้องกัน public URL
+- [x] ยืนยันวิธีเก็บไฟล์แนบบน cloud
+- [x] ยืนยันนโยบายลบคำร้อง
+- [x] ยืนยันการแก้เลขคำร้องสำหรับ correction/backfill
 
-ยังไม่ทำ:
-- Upload จริง
-- Export จริง
-- Login เต็มระบบหรือ user/role management
+ข้อสรุป:
+- [x] Hosting: Vercel
+- [x] Database: Neon PostgreSQL
+- [x] File storage: Vercel Blob Private Storage
+- [x] Access control: shared password access gate ผ่าน `APP_PASSWORD` และ session cookie
+- [x] Full login / roles: ยังไม่ทำใน version 1
+- [x] Delete policy: soft delete และไม่ reuse เลขคำร้อง
+- [x] Backfill validation: reject หาก `CYY` ไม่ตรงปีงบประมาณจาก `request_date`
 
-### Slice 2: Database Foundation
+เหลือ:
+- [x] ไม่มี owner decision ที่บล็อก implementation แล้ว
 
-เป้าหมาย:
-- สร้าง PostgreSQL schema
-- seed ข้อมูลเริ่มต้น
-- ทดสอบ connection จาก local และ Vercel
-
-ตารางหลัก:
-1. `requester_types`
-2. `categories`
-3. `statuses`
-4. `evidence_types`
-5. `requests`
-6. `request_attachments`
-
-จุดที่ต้องระวัง:
-- `request_no` ต้อง unique
-- `(fiscal_year, sequence_no)` ต้อง unique
-- การออกเลขต้องกันเลขซ้ำเมื่อมีผู้ใช้หลายคนกดบันทึกใกล้กัน
-
-### Slice 3: Add Request
+## [x] Slice 1: Project Skeleton
 
 เป้าหมาย:
-- เพิ่มคำร้องใหม่ด้วย field บังคับ 4 ช่อง
-- ออกเลข `CYY-NNNN`
-- แสดงเลขคำร้องเด่นหลังบันทึก
-- วางโครงให้แก้เลขคำร้องได้ภายหลังสำหรับ correction/backfill
+- [x] สร้าง Next.js + TypeScript project
+- [x] ตั้งค่า Tailwind/CSS theme ภาษาไทย
+- [x] เตรียม app shell สำหรับ dashboard, form, list, report, settings
+- [x] ตั้งค่า environment variable template
+- [x] เตรียม connection ไป Neon แบบ lazy initialization
+- [x] เพิ่ม shared password access gate
+- [x] ใช้ `src/proxy.ts` สำหรับ optimistic redirect ตาม Next.js 16
+
+หลักฐาน:
+- [x] `npm run build` ผ่าน
+- [x] `npm run lint` ผ่าน
+- [x] push ขึ้น GitHub แล้ว
+
+เหลือ:
+- [ ] ตรวจบน Vercel preview หลัง env พร้อม
+
+## [x] Slice 2: Database Foundation
+
+เป้าหมาย:
+- [x] สร้าง PostgreSQL schema อัตโนมัติผ่าน `ensureSchema`
+- [x] สร้างตาราง `requester_types`
+- [x] สร้างตาราง `categories`
+- [x] สร้างตาราง `statuses`
+- [x] สร้างตาราง `evidence_types`
+- [x] สร้างตาราง `requests`
+- [x] สร้างตาราง `request_attachments`
+- [x] เพิ่ม unique constraint สำหรับ `request_no`
+- [x] เพิ่ม unique constraint สำหรับ `(fiscal_year, sequence_no)`
+- [x] เพิ่ม `statuses.semantic_key` สำหรับ logic smart ที่ไม่ผูกกับชื่อภาษาไทย
+- [x] ปรับ seed data ให้ตรง `SEED_DATA.md`
+- [x] ปิดใช้งาน seed เก่าที่เลิกใช้ เช่น `ยกเลิก`, `คดีอาชญากรรม`, `เหตุเดือดร้อนรำคาญ`
+
+เหลือ:
+- [ ] ทดสอบ schema creation กับ Neon production จริง
+- [ ] ยืนยันว่าข้อมูลเดิมใน Neon ถ้ามี ไม่ถูกกระทบจาก reseed
+
+## [x] Slice 3: Add Request Flow
+
+เป้าหมาย:
+- [x] เพิ่มคำร้องใหม่ด้วย field บังคับ 4 ช่อง
+- [x] วันที่ default เป็นวันนี้
+- [x] ออกเลข `CYY-NNNN`
+- [x] แสดงเลขคำร้องเด่นหลังบันทึก
+- [x] รองรับ copy เลขคำร้อง
+- [x] บันทึกโดยไม่แนบไฟล์ได้
+- [x] วางโครงให้แก้เลขคำร้องได้ภายหลังสำหรับ correction/backfill
+- [x] เพิ่มเลขคำร้องโดยประมาณก่อนบันทึก
+- [x] เพิ่ม smart defaults จากข้อมูลที่ใช้บ่อยจริง
 
 เกณฑ์ผ่าน:
-- บันทึกโดยไม่แนบไฟล์ได้
-- วันที่ default เป็นวันนี้
-- คำร้องแรกปีงบประมาณ 2569 ได้ `C69-0001`
-- วันที่ 2026-10-01 เริ่ม `C70-0001`
+- [x] field บังคับไม่เกิน 4 field
+- [x] วันที่ 2026-06-16 อยู่ปีงบ 2569 และใช้ prefix `C69`
+- [x] วันที่ 2026-10-01 อยู่ปีงบ 2570 และใช้ prefix `C70`
+- [x] เลขคำร้องจริงยืนยันเมื่อบันทึก ไม่ถือว่า preview เป็นเลขจอง
 
-### Slice 4: Search and Edit
+เหลือ:
+- [ ] ทดสอบเพิ่มคำร้องจริงบน Vercel + Neon
+- [ ] จับเวลาหน้างานจริงว่าไม่แนบไฟล์ใช้ไม่เกิน 30 วินาที
 
-เป้าหมาย:
-- ค้นหาด้วยเลขคำร้อง
-- filter ตามช่วงวันที่ ประเภทผู้ขอ หมวดหมู่ สถานะ
-- แก้ไขข้อมูลทั่วไปโดยเลขคำร้องเดิมไม่เปลี่ยนเอง
-- แก้ไขเลขคำร้องโดยตรงได้เมื่อ format ถูกและไม่ซ้ำ
-- ลบคำร้องพร้อม confirmation
-
-จุดที่ต้องตกลง:
-- ใช้ soft delete เมื่อผู้ใช้ลบคำร้อง
-- เลขคำร้องของรายการที่ถูกลบต้องไม่นำกลับมาใช้ซ้ำ
-
-### Slice 5: Master Data
+## [x] Slice 4: Search, Edit, and Delete Policy
 
 เป้าหมาย:
-- จัดการหมวดหมู่
-- จัดการประเภทหลักฐาน
-- เพิ่ม แก้ไข เรียงลำดับ เปิด/ปิดใช้งาน
+- [x] ค้นหาด้วยเลขคำร้อง/สถานที่
+- [x] filter ตามช่วงวันที่
+- [x] filter ตามประเภทผู้ขอ
+- [x] filter ตามหมวดหมู่
+- [x] filter ตามสถานะ
+- [x] แก้ไขข้อมูลทั่วไปโดยเลขคำร้องเดิมไม่เปลี่ยนเอง
+- [x] แก้ไขเลขคำร้องโดยตรงได้เมื่อ format ถูกและไม่ซ้ำ
+- [x] reject เลขคำร้องที่ปีงบไม่ตรงกับวันที่รับคำร้อง
+- [x] soft delete คำร้อง
+- [x] รายงานและค้นหาปกติซ่อน soft-deleted records
+- [x] เพิ่ม quick filters: ทั้งหมด, เดือนนี้, ควรติดตาม, พบภาพ
 
-หลักการ:
-- รายการที่เคยถูกใช้แล้วไม่ควร hard delete
-- รายการที่ปิดใช้งานไม่ควรแสดงในฟอร์มใหม่
-- รายงานย้อนหลังยังต้องเห็นชื่อเดิม
+เหลือ:
+- [ ] เพิ่ม confirmation dialog ฝั่ง client ให้การลบคำร้องชัดขึ้น
+- [ ] ปรับ error mapping กรณีเลขซ้ำให้แยก `request_no` กับ `(fiscal_year, sequence_no)` ชัดขึ้น
 
-### Slice 6: Attachments
+## [x] Slice 5: Master Data
 
 เป้าหมาย:
-- แนบไฟล์หลักฐานภายหลังได้
-- ตรวจ extension และ MIME type
-- จำกัดขนาดไฟล์
-- ดาวน์โหลดผ่าน endpoint ของระบบ
-- ลบไฟล์พร้อม confirmation
+- [x] จัดการหมวดหมู่
+- [x] จัดการประเภทหลักฐาน
+- [x] เพิ่มรายการใหม่
+- [x] แก้ไขชื่อ
+- [x] เรียงลำดับ
+- [x] เปิด/ปิดใช้งาน
+- [x] รายการ inactive ไม่แสดงในฟอร์มใหม่ถ้าไม่ได้เป็นค่าของข้อมูลเดิม
 
-Cloud constraint:
-- Vercel filesystem ไม่ใช่ที่เก็บไฟล์ถาวร
-- ห้ามใช้ `uploads/` เป็น storage หลักบน Vercel
-- เก็บไฟล์จริงใน Vercel Blob Private Storage และเก็บ metadata ใน Neon
+เหลือ:
+- [ ] เพิ่มหน้าจัดการ requester types และ statuses หากต้องการให้ผู้ดูแลปรับเองจาก UI
+- [ ] เพิ่ม validation/UX กันแก้ `semantic_key` ของสถานะผิดพลาด ถ้าเปิดให้แก้ในอนาคต
+
+## [x] Slice 6: Attachments
+
+เป้าหมาย:
+- [x] แนบไฟล์หลักฐานภายหลังได้
+- [x] Upload ไป Vercel Blob Private Storage
+- [x] เก็บ metadata ใน Neon
+- [x] List/download/delete attachment
+- [x] ตรวจ extension
+- [x] block `.exe`, `.bat`, `.cmd`, `.js`, `.sh`, `.php`, `.html`
+- [x] ไม่ rename ไฟล์แนบเดิมเมื่อแก้เลขคำร้อง
 
 ไฟล์ที่รองรับ:
-- `.pdf`
-- `.jpg`
-- `.jpeg`
-- `.png`
-- `.doc`
-- `.docx`
+- [x] `.pdf`
+- [x] `.jpg`
+- [x] `.jpeg`
+- [x] `.png`
+- [x] `.doc`
+- [x] `.docx`
 
-ไฟล์ที่ต้อง block:
-- `.exe`
-- `.bat`
-- `.cmd`
-- `.js`
-- `.sh`
-- `.php`
-- `.html`
+เหลือ:
+- [ ] ทดสอบ upload/download/delete กับ Vercel Blob token จริง
+- [ ] เพิ่มขนาดไฟล์สูงสุดที่ชัดเจนใน env/spec/runtime
+- [ ] เพิ่ม confirmation dialog ฝั่ง client ก่อนลบไฟล์แนบ
 
-### Slice 7: Reports and Exports
+## [x] Slice 7: Reports and Exports
 
 เป้าหมาย:
-- รายงานตามช่วงวันที่
-- สรุปจำนวนทั้งหมด
-- count by category
-- count by requester type
-- count by status
-- ตารางรายการคำร้อง
-- Export Excel
-- Export PDF
-- Export Backup
+- [x] รายงานตามช่วงวันที่
+- [x] สรุปจำนวนทั้งหมด
+- [x] count by category
+- [x] count by requester type
+- [x] count by status
+- [x] ตารางรายการคำร้อง
+- [x] Export Excel
+- [x] Print-to-PDF view ภาษาไทย
+- [x] Export Backup JSON
+- [x] เทียบช่วงก่อนหน้า
+- [x] แนวโน้มย้อนหลัง 6 เดือน
+- [x] อัตราพบภาพจาก semantic `found` และ `not_found`
 
-จุดที่ต้องระวัง:
-- PDF ภาษาไทยต้องใช้ font ที่ render ภาษาไทยได้
-- Backup ควรรวม metadata ไฟล์แนบ แต่ไม่ควรฝังไฟล์แนบจริงใน Excel
+เหลือ:
+- [ ] ทดสอบ Excel กับข้อมูลจำนวนมากอย่างน้อย 5,000 รายการ
+- [ ] ตัดสินใจว่าจะใช้ binary PDF server-side หรือคง print-to-PDF สำหรับ MVP
+- [ ] เพิ่มพื้นที่ลงชื่อใน print/PDF view ให้ตรงแบบรายงานราชการมากขึ้น
+- [ ] Backup ยังเป็น JSON ไม่ใช่ Excel หลาย sheet ตาม spec เดิม ต้องตัดสินใจว่าจะเปลี่ยนหรือยอมรับ MVP นี้
 
-### Slice 8: Trial Deployment
+## [ ] Slice 8: Trial Deployment Runtime
 
 เป้าหมาย:
-- push source code ไป GitHub repo
-- import GitHub repo เข้า Vercel
-- deploy ไป Vercel
-- ตั้งค่า env vars
-- ทดสอบ Neon connection
-- ทดสอบ upload/download
-- ทดสอบ flow เพิ่มคำร้องภายใน 30 วินาที
+- [x] สร้าง GitHub repository
+- [x] push source code ไป GitHub repo
+- [x] ให้ Vercel สามารถ build จาก repo ได้
+- [ ] ตั้งค่า Vercel Environment Variables
+- [ ] ตรวจ Vercel preview/prod URL
+- [ ] ทดสอบ shared password access gate บน Vercel
+- [ ] ทดสอบ Neon connection production
+- [ ] ทดสอบสร้างคำร้องจริง
+- [ ] ทดสอบแก้เลขคำร้องย้อนหลัง
+- [ ] ทดสอบ upload/download/delete กับ Vercel Blob
+- [ ] ทดสอบ export Excel
+- [ ] ทดสอบ print-to-PDF
+- [ ] ทดสอบ backup
+
+Environment ที่ต้องตั้ง:
+- [ ] `DATABASE_URL`
+- [ ] `APP_PASSWORD`
+- [ ] `SESSION_SECRET`
+- [ ] `BLOB_READ_WRITE_TOKEN`
+- [ ] `REPORT_ORGANIZATION_NAME`
+- [ ] `FOLLOW_UP_DAYS` optional, default 7
 
 เกณฑ์ผ่าน:
-- URL ทดลองเข้าได้เฉพาะผู้มีสิทธิ์หรือผู้รู้รหัสทดลอง
-- ไม่มี public URL ของไฟล์หลักฐานใน UI
-- Export Excel/PDF ใช้งานได้
+- [ ] URL ทดลองเข้าได้เฉพาะผู้รู้รหัสทดลอง
+- [ ] ไม่มี public URL ของไฟล์หลักฐานใน UI
+- [ ] เพิ่มคำร้องและออกเลขได้จริง
+- [ ] รายงานและ export ใช้งานได้จริง
 
-## 3. สิ่งที่ยังไม่ทำใน Version 1
+## [x] Smart Enhancements A
 
-| รายการ | เหตุผล |
-|---|---|
-| รับคำร้องออนไลน์จากประชาชน | ยังใช้ใบคำร้องกระดาษ |
-| บัญชีผู้ใช้หลาย role | เพิ่มภาระ MVP |
-| Audit log เต็มรูปแบบ | เก็บเฉพาะ timestamp ขั้นต่ำก่อน |
-| อัปโหลดวิดีโอ CCTV | เสี่ยงพื้นที่และข้อมูลส่วนบุคคล |
-| Workflow อนุมัติหลายชั้น | ระบบนี้เป็นระบบสถิติ ไม่ใช่ case management |
+เป้าหมาย:
+- [x] A1 Dashboard แบบ actionable
+- [x] A2 Live preview เลขคำร้องถัดไป
+- [x] A3 Smart defaults บนฟอร์ม
+- [x] A4 รายงานเชิงเปรียบเทียบ/แนวโน้ม
+- [x] A5 Quick filters / Saved views แบบเบา
+- [x] อัปเดตเอกสารคู่กับโค้ด
+- [x] ไม่เพิ่ม required field
+- [x] ไม่เปลี่ยนระบบเป็น case management
 
-## 4. Remaining Runtime Setup
+เหลือ:
+- [ ] ทดสอบกับข้อมูลจริงบน Vercel/Neon
+- [ ] ยืนยันว่าคำว่า **คำร้องที่ควรติดตาม** สื่อสารกับผู้ใช้จริงได้ชัด
 
-ไม่มี owner decision ที่บล็อก implementation แล้ว เหลือค่า runtime ที่ต้องตั้งผ่าน env เท่านั้น:
+## [ ] Smart Enhancements B
 
-1. `BLOB_READ_WRITE_TOKEN` จาก Vercel Blob store
-2. Vercel Environment Variables สำหรับ deployment
+เป้าหมาย:
+- [ ] B1 Duplicate hint แบบไม่ block
+- [ ] B2 Location autocomplete จากสถานที่ที่เคยกรอก
 
-## 5. Resolved Decisions
+ข้อควรระวัง:
+- [ ] ห้ามเพิ่ม required field ใหม่
+- [ ] ห้าม block การบันทึก
+- [ ] ห้ามทำให้เพิ่มคำร้องเกิน 30 วินาที
+- [ ] ต้องใช้คำว่า hint/คำแนะนำ ไม่ใช่ error ถ้าเป็น duplicate ที่ไม่แน่นอน
 
-| Decision | Resolution |
-|---|---|
-| Access control สำหรับ Vercel trial | ใช้ shared password access gate ผ่าน `APP_PASSWORD` และ session cookie |
-| Login เต็มระบบ | ยังไม่ทำใน version 1 |
-| Attachment storage | ใช้ Vercel Blob Private Storage และเก็บ metadata ใน Neon |
-| Delete policy | ใช้ soft delete และซ่อนจากรายงานปกติ |
-| Report organization name | กลุ่มงานสถิติข้อมูลและสารสนเทศ |
-| Soft deleted records in MVP | ไม่มีหน้า audit/restore ใน MVP; เก็บไว้ backend และ backup ก่อน |
-| Backup scope in MVP | Export ข้อมูลตารางและ metadata รวม `deleted_at`; ไม่รวม binary blob files |
-| Request number correction | ต้อง reject หาก `CYY` ไม่ตรงกับปีงบประมาณจาก `request_date` |
+## [ ] Future Requirements
+
+ยังไม่ทำใน version 1:
+- [ ] รับคำร้องออนไลน์จากประชาชน
+- [ ] บัญชีผู้ใช้หลาย role
+- [ ] Audit log เต็มรูปแบบ
+- [ ] Restore UI สำหรับ soft-deleted records
+- [ ] อัปโหลดวิดีโอ CCTV
+- [ ] Workflow อนุมัติหลายชั้น
+- [ ] Notification/email
+- [ ] PWA/offline mode
+- [ ] Import ข้อมูลย้อนหลังจาก Excel
+- [ ] Dashboard ผู้บริหารแยกหน้า
+
+## Remaining Work แบบสั้นที่สุด
+
+ถ้าต้องการให้ MVP ทดลองใช้จริง:
+1. [ ] ตั้ง env บน Vercel
+2. [ ] เปิด Vercel deployment URL
+3. [ ] ทดสอบ login ด้วย shared password
+4. [ ] เพิ่มคำร้องจริง 2-3 รายการ
+5. [ ] ทดสอบแนบไฟล์จริง
+6. [ ] ทดสอบรายงาน/Excel/PDF/Backup
+7. [ ] เก็บ feedback จากผู้ใช้หน้างาน
+
+ถ้าต้องการต่อยอด smart:
+1. [ ] ทำ duplicate hint
+2. [ ] ทำ location autocomplete
+3. [ ] เพิ่ม import Excel ย้อนหลัง
+4. [ ] เพิ่ม dashboard ผู้บริหาร
