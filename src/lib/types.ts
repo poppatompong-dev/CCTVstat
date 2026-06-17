@@ -5,6 +5,7 @@ export type MasterRow = {
   name: string;
   sort_order: number;
   is_active: boolean;
+  semantic_key?: string | null;
 };
 
 export type RequestRow = {
@@ -23,6 +24,7 @@ export type RequestRow = {
   requester_type_name: string;
   category_name: string;
   status_name: string;
+  status_semantic_key: string | null;
   attachment_count: number;
 };
 
@@ -46,6 +48,11 @@ export type DashboardStats = {
   thisMonth: number;
   withAttachments: number;
   latestRequestNo: string | null;
+  followUpTotal: number;
+  overdueChecking: number;
+  unresolvedTotal: number;
+  followUpDays: number;
+  followUpRows: RequestRow[];
 };
 
 export type RequestFilters = {
@@ -55,12 +62,23 @@ export type RequestFilters = {
   requesterTypeId?: string;
   categoryId?: string;
   statusId?: string;
+  view?: string;
+  statusSemanticKey?: string;
 };
 
 export type ReportData = {
   total: number;
+  previousTotal: number;
+  changePercent: number | null;
+  foundRate: number | null;
   byCategory: Array<{ name: string; count: number }>;
   byRequesterType: Array<{ name: string; count: number }>;
   byStatus: Array<{ name: string; count: number }>;
+  monthlyTrend: Array<{ month: string; count: number }>;
   rows: RequestRow[];
+};
+
+export type SmartDefaults = {
+  requesterTypeId: number | null;
+  statusId: number | null;
 };

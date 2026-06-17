@@ -19,6 +19,7 @@ function readParams(params: Record<string, string | string[] | undefined>): Requ
     requesterTypeId: get("requesterTypeId"),
     categoryId: get("categoryId"),
     statusId: get("statusId"),
+    view: get("view"),
   };
 }
 
@@ -36,6 +37,21 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
         action={{ href: "/requests/new", label: "เพิ่มคำร้อง", icon: <FilePlus2 size={18} /> }}
       />
       <Feedback params={params} />
+
+      <nav className="quick-filter-row" aria-label="มุมมองด่วน">
+        <Link className={`quick-filter ${!filters.view ? "active" : ""}`} href="/requests">
+          ทั้งหมด
+        </Link>
+        <Link className={`quick-filter ${filters.view === "this-month" ? "active" : ""}`} href="/requests?view=this-month">
+          เดือนนี้
+        </Link>
+        <Link className={`quick-filter ${filters.view === "follow-up" ? "active" : ""}`} href="/requests?view=follow-up">
+          ควรติดตาม
+        </Link>
+        <Link className={`quick-filter ${filters.view === "found" ? "active" : ""}`} href="/requests?view=found">
+          พบภาพ
+        </Link>
+      </nav>
 
       <section className="panel">
         <form className="filter-grid">

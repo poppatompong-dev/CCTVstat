@@ -14,6 +14,7 @@ import type {
   ReportData,
   RequestFilters,
   RequestRow,
+  SmartDefaults,
 } from "@/lib/types";
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
@@ -59,15 +60,47 @@ async function createMasterTable(name: MasterKind) {
   `);
 }
 
-async function seedMaster(kind: MasterKind, names: string[]) {
-  for (const [index, name] of names.entries()) {
+type SeedRow = {
+  name: string;
+  sortOrder: number;
+  semanticKey?: string;
+};
+
+async function seedMaster(kind: MasterKind, rows: SeedRow[]) {
+  for (const row of rows) {
     await query(
       `INSERT INTO ${kind} (name, sort_order)
        VALUES ($1, $2)
-       ON CONFLICT (name) DO NOTHING`,
-      [name, index + 1],
+       ON CONFLICT (name)
+       DO UPDATE SET sort_order = EXCLUDED.sort_order,
+         updated_at = NOW()`,
+      [row.name, row.sortOrder],
     );
   }
+}
+
+async function seedStatuses(rows: SeedRow[]) {
+  for (const row of rows) {
+    await query(
+      `INSERT INTO statuses (name, sort_order, semantic_key)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (name)
+       DO UPDATE SET sort_order = EXCLUDED.sort_order,
+         semantic_key = EXCLUDED.semantic_key,
+         updated_at = NOW()`,
+      [row.name, row.sortOrder, row.semanticKey ?? null],
+    );
+  }
+}
+
+async function deactivateDeprecated(kind: MasterKind, names: string[]) {
+  if (!names.length) return;
+  await query(
+    `UPDATE ${kind}
+     SET is_active = FALSE, updated_at = NOW()
+     WHERE name = ANY($1)`,
+    [names],
+  );
 }
 
 export async function ensureSchema() {
@@ -112,34 +145,44 @@ export async function ensureSchema() {
     )
   `);
 
+  await query("ALTER TABLE statuses ADD COLUMN IF NOT EXISTS semantic_key TEXT");
+  await query("CREATE UNIQUE INDEX IF NOT EXISTS statuses_semantic_key_unique ON statuses (semantic_key) WHERE semantic_key IS NOT NULL");
+
   await seedMaster("requester_types", [
-    "ประชาชน",
-    "ตำรวจ",
-    "หน่วยงานรัฐ",
-    "เจ้าหน้าที่เทศบาล",
+    { name: "ประชาชน", sortOrder: 1 },
+    { name: "เจ้าหน้าที่เทศบาล", sortOrder: 2 },
+    { name: "ตำรวจ", sortOrder: 3 },
+    { name: "หน่วยงานรัฐ", sortOrder: 4 },
+    { name: "อื่น ๆ", sortOrder: 5 },
   ]);
   await seedMaster("categories", [
-    "อุบัติเหตุจราจร",
-    "ทรัพย์สินสูญหาย",
-    "คดีอาชญากรรม",
-    "เหตุเดือดร้อนรำคาญ",
-    "อื่น ๆ",
+    { name: "อุบัติเหตุจราจร", sortOrder: 1 },
+    { name: "ทรัพย์สินสูญหาย", sortOrder: 2 },
+    { name: "เหตุเกี่ยวกับคดี/อาชญากรรม", sortOrder: 3 },
+    { name: "ตรวจสอบการจราจร", sortOrder: 4 },
+    { name: "เหตุความสงบเรียบร้อย", sortOrder: 5 },
+    { name: "หน่วยงานรัฐ/ตำรวจขอข้อมูล", sortOrder: 6 },
+    { name: "งานภายในเทศบาล", sortOrder: 7 },
+    { name: "อื่น ๆ", sortOrder: 8 },
   ]);
-  await seedMaster("statuses", [
-    "รับคำร้องแล้ว",
-    "พบภาพ",
-    "ไม่พบภาพ",
-    "แจ้งผลแล้ว",
-    "ยกเลิก",
+  await seedStatuses([
+    { name: "รับคำร้องแล้ว", sortOrder: 1, semanticKey: "received" },
+    { name: "กำลังตรวจสอบภาพ", sortOrder: 2, semanticKey: "checking" },
+    { name: "พบภาพ", sortOrder: 3, semanticKey: "found" },
+    { name: "ไม่พบภาพ", sortOrder: 4, semanticKey: "not_found" },
+    { name: "แจ้งผลแล้ว", sortOrder: 5, semanticKey: "notified" },
+    { name: "อื่น ๆ", sortOrder: 6, semanticKey: "other" },
   ]);
   await seedMaster("evidence_types", [
-    "ใบคำร้อง",
-    "หนังสือราชการ",
-    "ใบแจ้งความ",
-    "เอกสารส่งมอบ",
-    "รูปภาพประกอบ",
-    "อื่น ๆ",
+    { name: "ใบคำร้อง", sortOrder: 1 },
+    { name: "หนังสือราชการ", sortOrder: 2 },
+    { name: "ใบแจ้งความ", sortOrder: 3 },
+    { name: "เอกสารส่งมอบ", sortOrder: 4 },
+    { name: "รูปภาพประกอบ", sortOrder: 5 },
+    { name: "อื่น ๆ", sortOrder: 6 },
   ]);
+  await deactivateDeprecated("categories", ["คดีอาชญากรรม", "เหตุเดือดร้อนรำคาญ"]);
+  await deactivateDeprecated("statuses", ["ยกเลิก"]);
 
   schemaReady = true;
 }
@@ -160,7 +203,8 @@ export async function getMasterRows(kind: MasterKind, activeOnly = false) {
   await ensureSchema();
   assertMasterKind(kind);
   return query<MasterRow>(
-    `SELECT id, name, sort_order, is_active
+    `SELECT id, name, sort_order, is_active,
+       ${kind === "statuses" ? "semantic_key" : "NULL AS semantic_key"}
      FROM ${kind}
      ${activeOnly ? "WHERE is_active = TRUE" : ""}
      ORDER BY sort_order, id`,
@@ -231,6 +275,23 @@ function filtersToWhere(filters: RequestFilters, startIndex = 1) {
     params.push(Number(filters.statusId));
     index += 1;
   }
+  if (filters.statusSemanticKey) {
+    clauses.push(`s.semantic_key = $${index}`);
+    params.push(filters.statusSemanticKey);
+    index += 1;
+  }
+  if (filters.view === "this-month") {
+    clauses.push("r.request_date >= DATE_TRUNC('month', CURRENT_DATE)");
+  }
+  if (filters.view === "follow-up") {
+    clauses.push("COALESCE(s.semantic_key, '') <> 'notified'");
+    clauses.push("r.request_date <= CURRENT_DATE - ($" + index + "::int * INTERVAL '1 day')");
+    params.push(followUpDays());
+    index += 1;
+  }
+  if (filters.view === "found") {
+    clauses.push("s.semantic_key = 'found'");
+  }
 
   return { where: clauses.join(" AND "), params, nextIndex: index };
 }
@@ -242,6 +303,7 @@ const requestSelect = `
     rt.name AS requester_type_name,
     c.name AS category_name,
     s.name AS status_name,
+    s.semantic_key AS status_semantic_key,
     COUNT(a.id)::int AS attachment_count
   FROM requests r
   JOIN requester_types rt ON rt.id = r.requester_type_id
@@ -256,7 +318,7 @@ export async function listRequests(filters: RequestFilters = {}, limit = 80) {
   return query<RequestRow>(
     `${requestSelect}
      WHERE ${where}
-     GROUP BY r.id, rt.name, c.name, s.name
+     GROUP BY r.id, rt.name, c.name, s.name, s.semantic_key
      ORDER BY r.request_date DESC, r.id DESC
      LIMIT $${nextIndex}`,
     [...params, limit],
@@ -268,7 +330,7 @@ export async function getRequest(id: number) {
   const rows = await query<RequestRow>(
     `${requestSelect}
      WHERE r.deleted_at IS NULL AND r.id = $1
-     GROUP BY r.id, rt.name, c.name, s.name
+     GROUP BY r.id, rt.name, c.name, s.name, s.semantic_key
      LIMIT 1`,
     [id],
   );
@@ -328,15 +390,53 @@ export async function getDashboardStats(): Promise<DashboardStats> {
      ORDER BY created_at DESC
      LIMIT 1`,
   );
+  const days = followUpDays();
+  const [{ follow_up_total }] = await query<{ follow_up_total: number }>(
+    `SELECT COUNT(*)::int AS follow_up_total
+     FROM requests r
+     JOIN statuses s ON s.id = r.status_id
+     WHERE r.deleted_at IS NULL
+       AND COALESCE(s.semantic_key, '') <> 'notified'
+       AND r.request_date <= CURRENT_DATE - ($1::int * INTERVAL '1 day')`,
+    [days],
+  );
+  const [{ overdue_checking }] = await query<{ overdue_checking: number }>(
+    `SELECT COUNT(*)::int AS overdue_checking
+     FROM requests r
+     JOIN statuses s ON s.id = r.status_id
+     WHERE r.deleted_at IS NULL
+       AND s.semantic_key = 'checking'
+       AND r.request_date <= CURRENT_DATE - ($1::int * INTERVAL '1 day')`,
+    [days],
+  );
+  const [{ unresolved_total }] = await query<{ unresolved_total: number }>(
+    `SELECT COUNT(*)::int AS unresolved_total
+     FROM requests r
+     JOIN statuses s ON s.id = r.status_id
+     WHERE r.deleted_at IS NULL
+       AND COALESCE(s.semantic_key, '') <> 'notified'`,
+  );
+  const followUpRows = await listRequests({ view: "follow-up" }, 5);
   return {
     total,
     thisMonth: this_month,
     withAttachments: with_attachments,
     latestRequestNo: latest[0]?.request_no ?? null,
+    followUpTotal: follow_up_total,
+    overdueChecking: overdue_checking,
+    unresolvedTotal: unresolved_total,
+    followUpDays: days,
+    followUpRows,
   };
 }
 
+function followUpDays() {
+  const value = Number(process.env.FOLLOW_UP_DAYS || 7);
+  return Number.isFinite(value) && value > 0 ? value : 7;
+}
+
 export async function nextRequestNumber(requestDate: string) {
+  await ensureSchema();
   const fiscalYear = fiscalYearFromDate(requestDate);
   const [{ next_sequence }] = await query<{ next_sequence: number }>(
     `SELECT COALESCE(MAX(sequence_no), 0)::int + 1 AS next_sequence
@@ -348,6 +448,51 @@ export async function nextRequestNumber(requestDate: string) {
     fiscalYear,
     sequenceNo: next_sequence,
     requestNo: formatRequestNo(requestDate, next_sequence),
+  };
+}
+
+export async function getSmartDefaults(): Promise<SmartDefaults> {
+  await ensureSchema();
+  const requesterRows = await query<{ id: number }>(
+    `SELECT r.requester_type_id AS id
+     FROM requests r
+     JOIN requester_types rt ON rt.id = r.requester_type_id
+     WHERE r.deleted_at IS NULL
+       AND r.request_date >= CURRENT_DATE - INTERVAL '90 days'
+       AND rt.is_active = TRUE
+     GROUP BY r.requester_type_id
+     ORDER BY COUNT(*) DESC, MAX(r.created_at) DESC
+     LIMIT 1`,
+  );
+  const statusRows = await query<{ id: number }>(
+    `SELECT r.status_id AS id
+     FROM requests r
+     JOIN statuses s ON s.id = r.status_id
+     WHERE r.deleted_at IS NULL
+       AND r.request_date >= CURRENT_DATE - INTERVAL '90 days'
+       AND s.is_active = TRUE
+       AND COALESCE(s.semantic_key, '') <> 'notified'
+     GROUP BY r.status_id
+     ORDER BY COUNT(*) DESC, MAX(r.created_at) DESC
+     LIMIT 1`,
+  );
+
+  if (requesterRows[0]?.id && statusRows[0]?.id) {
+    return {
+      requesterTypeId: requesterRows[0].id,
+      statusId: statusRows[0].id,
+    };
+  }
+
+  const fallback = await query<{ requester_type_id: number | null; status_id: number | null }>(
+    `SELECT
+       (SELECT id FROM requester_types WHERE name = 'ประชาชน' ORDER BY sort_order LIMIT 1) AS requester_type_id,
+       (SELECT id FROM statuses WHERE semantic_key = 'received' ORDER BY sort_order LIMIT 1) AS status_id`,
+  );
+
+  return {
+    requesterTypeId: requesterRows[0]?.id ?? fallback[0]?.requester_type_id ?? null,
+    statusId: statusRows[0]?.id ?? fallback[0]?.status_id ?? null,
   };
 }
 
@@ -478,6 +623,8 @@ export async function deleteAttachmentRecord(id: number) {
 
 export async function getReport(filters: RequestFilters): Promise<ReportData> {
   const rows = await listRequests(filters, 1000);
+  const previousFilters = previousPeriodFilters(filters);
+  const previousRows = previousFilters ? await listRequests(previousFilters, 1000) : [];
   const countBy = (key: keyof RequestRow) => {
     const map = new Map<string, number>();
     for (const row of rows) {
@@ -488,12 +635,49 @@ export async function getReport(filters: RequestFilters): Promise<ReportData> {
       (a, b) => b.count - a.count || a.name.localeCompare(b.name, "th"),
     );
   };
+  const found = rows.filter((row) => row.status_semantic_key === "found").length;
+  const notFound = rows.filter((row) => row.status_semantic_key === "not_found").length;
+  const denominator = found + notFound;
+  const trendRows = await query<{ month: string; count: number }>(
+    `SELECT TO_CHAR(DATE_TRUNC('month', request_date), 'YYYY-MM') AS month,
+      COUNT(*)::int AS count
+     FROM requests
+     WHERE deleted_at IS NULL
+       AND request_date >= DATE_TRUNC('month', CURRENT_DATE) - INTERVAL '5 months'
+     GROUP BY 1
+     ORDER BY 1`,
+  );
 
   return {
     total: rows.length,
+    previousTotal: previousRows.length,
+    changePercent: previousRows.length
+      ? ((rows.length - previousRows.length) / previousRows.length) * 100
+      : null,
+    foundRate: denominator ? (found / denominator) * 100 : null,
     byCategory: countBy("category_name"),
     byRequesterType: countBy("requester_type_name"),
     byStatus: countBy("status_name"),
+    monthlyTrend: trendRows,
     rows,
+  };
+}
+
+function previousPeriodFilters(filters: RequestFilters): RequestFilters | null {
+  if (!filters.startDate || !filters.endDate) return null;
+  const start = new Date(`${filters.startDate}T00:00:00Z`);
+  const end = new Date(`${filters.endDate}T00:00:00Z`);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) {
+    return null;
+  }
+  const days = Math.round((end.getTime() - start.getTime()) / 86_400_000) + 1;
+  const previousEnd = new Date(start);
+  previousEnd.setUTCDate(previousEnd.getUTCDate() - 1);
+  const previousStart = new Date(previousEnd);
+  previousStart.setUTCDate(previousStart.getUTCDate() - days + 1);
+  return {
+    ...filters,
+    startDate: previousStart.toISOString().slice(0, 10),
+    endDate: previousEnd.toISOString().slice(0, 10),
   };
 }

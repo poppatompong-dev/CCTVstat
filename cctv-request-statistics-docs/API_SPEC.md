@@ -51,6 +51,23 @@ Query:
 - requester_type_id
 - category_id
 - status_id
+- view (`this-month`, `follow-up`, `found`)
+
+### Next Number Preview
+```http
+GET /api/requests/next-number?date=2026-06-16
+```
+
+Response:
+```json
+{
+  "fiscalYear": 2569,
+  "sequenceNo": 42,
+  "requestNo": "C69-0042"
+}
+```
+
+หมายเหตุ: ใช้เป็นเลขคำร้องโดยประมาณเท่านั้น เลขจริงยืนยันเมื่อบันทึกสำเร็จ
 
 ### Detail
 ```http
@@ -155,6 +172,10 @@ Response:
   "by_category": [],
   "by_requester_type": [],
   "by_status": [],
+  "previous_total": 20,
+  "change_percent": 25,
+  "found_rate": 64.5,
+  "monthly_trend": [],
   "records": []
 }
 ```

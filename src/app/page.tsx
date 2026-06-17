@@ -3,7 +3,9 @@ import {
   ClipboardList,
   FilePlus2,
   Paperclip,
+  Radar,
   Sparkles,
+  TimerReset,
 } from "lucide-react";
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth";
@@ -68,6 +70,38 @@ export default async function HomePage() {
           <span>เลขล่าสุด</span>
           <strong className="mono">{stats.latestRequestNo ?? "-"}</strong>
         </div>
+      </section>
+
+      <section className="follow-up-panel">
+        <div className="follow-up-copy">
+          <p className="kicker">คำร้องที่ควรติดตาม</p>
+          <h2>{formatNumber(stats.followUpTotal)} รายการต้องดูต่อ</h2>
+          <p>
+            นับจากคำร้องที่ยังไม่ถึงสถานะ “แจ้งผลแล้ว” และเก่ากว่า {formatNumber(stats.followUpDays)} วัน
+          </p>
+        </div>
+        <div className="follow-up-metrics">
+          <div>
+            <TimerReset size={20} aria-hidden="true" />
+            <span>กำลังตรวจสอบเกินกำหนด</span>
+            <strong>{formatNumber(stats.overdueChecking)}</strong>
+          </div>
+          <div>
+            <Radar size={20} aria-hidden="true" />
+            <span>ยังไม่แจ้งผล</span>
+            <strong>{formatNumber(stats.unresolvedTotal)}</strong>
+          </div>
+        </div>
+      </section>
+
+      <section className="section-block">
+        <div className="section-head">
+          <h2>รายการที่ควรติดตามล่าสุด</h2>
+          <Link href="/requests?view=follow-up" className="text-link">
+            เปิดมุมมองติดตาม
+          </Link>
+        </div>
+        <RequestList rows={stats.followUpRows} />
       </section>
 
       <section className="section-block">

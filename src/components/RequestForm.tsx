@@ -1,4 +1,5 @@
 import type { MasterRow, RequestRow } from "@/lib/types";
+import { RequestNumberPreview } from "@/components/RequestNumberPreview";
 
 export function RequestForm({
   action,
@@ -23,6 +24,12 @@ export function RequestForm({
 
   return (
     <form action={action} className="form-grid">
+      {!showRequestNo && request?.request_date ? (
+        <div className="span-2">
+          <RequestNumberPreview initialDate={request.request_date} />
+        </div>
+      ) : null}
+
       {showRequestNo ? (
         <label className="field span-2 warning-field">
           <span>เลขคำร้อง</span>

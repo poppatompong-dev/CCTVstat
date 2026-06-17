@@ -39,6 +39,16 @@ export default async function PrintReportPage({ searchParams }: { searchParams: 
         <span>จำนวนคำร้องทั้งหมด</span>
         <strong>{formatNumber(report.total)}</strong>
       </section>
+      <section className="print-insights">
+        <div>
+          <span>ช่วงก่อนหน้า</span>
+          <strong>{formatNumber(report.previousTotal)}</strong>
+        </div>
+        <div>
+          <span>อัตราพบภาพ</span>
+          <strong>{report.foundRate === null ? "-" : `${report.foundRate.toFixed(1)}%`}</strong>
+        </div>
+      </section>
       <table>
         <thead>
           <tr>

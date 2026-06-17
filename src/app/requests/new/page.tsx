@@ -1,5 +1,5 @@
 import { requireAuth } from "@/lib/auth";
-import { getMasters } from "@/lib/db";
+import { getMasters, getSmartDefaults } from "@/lib/db";
 import { todayInput } from "@/lib/dates";
 import { createRequestAction } from "@/app/actions";
 import { AppShell } from "@/components/AppShell";
@@ -11,9 +11,15 @@ type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function NewRequestPage({ searchParams }: { searchParams: SearchParams }) {
   await requireAuth();
-  const [masters, params] = await Promise.all([getMasters(), searchParams]);
+  const [masters, smartDefaults, params] = await Promise.all([
+    getMasters(),
+    getSmartDefaults(),
+    searchParams,
+  ]);
   const defaultStatus = masters.statuses.find((row) => row.name === "รับคำร้องแล้ว") ?? masters.statuses[0];
   const defaultRequester = masters.requesterTypes.find((row) => row.name === "ประชาชน") ?? masters.requesterTypes[0];
+  const requesterTypeId = smartDefaults.requesterTypeId ?? defaultRequester?.id ?? 0;
+  const statusId = smartDefaults.statusId ?? defaultStatus?.id ?? 0;
 
   return (
     <AppShell>
@@ -33,9 +39,9 @@ export default async function NewRequestPage({ searchParams }: { searchParams: S
             request_date: todayInput(),
             fiscal_year: 0,
             sequence_no: 0,
-            requester_type_id: defaultRequester?.id ?? 0,
+            requester_type_id: requesterTypeId,
             category_id: 0,
-            status_id: defaultStatus?.id ?? 0,
+            status_id: statusId,
             location_text: null,
             note: null,
             created_at: "",
@@ -43,6 +49,7 @@ export default async function NewRequestPage({ searchParams }: { searchParams: S
             requester_type_name: "",
             category_name: "",
             status_name: "",
+            status_semantic_key: null,
             attachment_count: 0,
           }}
         />

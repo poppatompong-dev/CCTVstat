@@ -1,4 +1,5 @@
 import { notFound } from "next/navigation";
+import Link from "next/link";
 import { Paperclip, Trash2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { formatThaiDateTime } from "@/lib/dates";
@@ -11,6 +12,7 @@ import {
 } from "@/app/actions";
 import { getAttachments, getMasters, getRequest } from "@/lib/db";
 import { AppShell } from "@/components/AppShell";
+import { CopyButton } from "@/components/CopyButton";
 import { Feedback } from "@/components/Feedback";
 import { PageHeader } from "@/components/PageHeader";
 import { RequestForm } from "@/components/RequestForm";
@@ -48,6 +50,11 @@ export default async function RequestDetailPage({
           <span>เลขคำร้อง</span>
           <strong className="mono">{request.request_no}</strong>
           <p>กรุณาเขียนเลขนี้ที่หัวใบคำร้อง</p>
+        </div>
+        <div className="success-actions">
+          <CopyButton value={request.request_no} />
+          <Link className="btn outline" href="/requests/new">เพิ่มคำร้องใหม่</Link>
+          <Link className="btn ghost" href="/">กลับหน้าหลัก</Link>
         </div>
       </section>
 

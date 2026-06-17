@@ -45,6 +45,25 @@ function BarList({ data }: { data: Array<{ name: string; count: number }> }) {
   );
 }
 
+function percent(value: number | null) {
+  if (value === null) return "-";
+  return `${value > 0 ? "+" : ""}${value.toFixed(1)}%`;
+}
+
+function TrendChart({ data }: { data: Array<{ month: string; count: number }> }) {
+  const max = Math.max(1, ...data.map((row) => row.count));
+  return (
+    <div className="trend-chart" aria-label="แนวโน้มย้อนหลัง 6 เดือน">
+      {data.map((row) => (
+        <div className="trend-bar" key={row.month}>
+          <i style={{ height: `${Math.max(8, (row.count / max) * 100)}%` }} />
+          <span>{row.month.slice(5)}</span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 export default async function ReportsPage({ searchParams }: { searchParams: SearchParams }) {
   await requireAuth();
   const params = await searchParams;
@@ -101,6 +120,16 @@ export default async function ReportsPage({ searchParams }: { searchParams: Sear
           <span>จำนวนคำร้องทั้งหมด</span>
           <strong>{formatNumber(report.total)}</strong>
         </div>
+        <div className="insight-tile">
+          <span>เทียบช่วงก่อนหน้า</span>
+          <strong>{percent(report.changePercent)}</strong>
+          <small>ช่วงก่อนหน้า {formatNumber(report.previousTotal)} รายการ</small>
+        </div>
+        <div className="insight-tile">
+          <span>อัตราพบภาพ</span>
+          <strong>{report.foundRate === null ? "-" : `${report.foundRate.toFixed(1)}%`}</strong>
+          <small>จากสถานะพบภาพและไม่พบภาพ</small>
+        </div>
         <div className="export-actions">
           <a className="btn outline" href={`/api/reports/excel?${query}`}>
             <Download size={18} />
@@ -118,6 +147,10 @@ export default async function ReportsPage({ searchParams }: { searchParams: Sear
       </section>
 
       <section className="report-grid">
+        <div className="panel">
+          <h2>แนวโน้มย้อนหลัง 6 เดือน</h2>
+          <TrendChart data={report.monthlyTrend} />
+        </div>
         <div className="panel">
           <h2>ตามหมวดหมู่</h2>
           <BarList data={report.byCategory} />

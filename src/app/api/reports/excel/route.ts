@@ -35,6 +35,9 @@ export async function GET(request: Request) {
 
   const summary = [
     { มิติ: "จำนวนคำร้องทั้งหมด", ค่า: report.total },
+    { มิติ: "จำนวนคำร้องช่วงก่อนหน้า", ค่า: report.previousTotal },
+    { มิติ: "เปลี่ยนแปลงเทียบช่วงก่อนหน้า (%)", ค่า: report.changePercent ?? "" },
+    { มิติ: "อัตราพบภาพ (%)", ค่า: report.foundRate ?? "" },
     ...report.byCategory.map((row) => ({ มิติ: `หมวดหมู่: ${row.name}`, ค่า: row.count })),
     ...report.byRequesterType.map((row) => ({ มิติ: `ประเภทผู้ขอ: ${row.name}`, ค่า: row.count })),
     ...report.byStatus.map((row) => ({ มิติ: `สถานะ: ${row.name}`, ค่า: row.count })),
@@ -42,6 +45,7 @@ export async function GET(request: Request) {
 
   utils.book_append_sheet(workbook, utils.json_to_sheet(summary), "สรุป");
   utils.book_append_sheet(workbook, utils.json_to_sheet(rows), "รายการคำร้อง");
+  utils.book_append_sheet(workbook, utils.json_to_sheet(report.monthlyTrend), "แนวโน้ม 6 เดือน");
 
   const buffer = write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;
   const body = new Uint8Array(buffer);
