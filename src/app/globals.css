@@ -58,6 +58,90 @@ a {
   text-decoration: none;
 }
 
+@keyframes cctv-selected-pop {
+  0% {
+    transform: scale(0.985);
+  }
+  60% {
+    transform: scale(1.012);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes cctv-check-in {
+  from {
+    opacity: 0;
+    transform: translateY(3px) scale(0.8) rotate(45deg);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1) rotate(45deg);
+  }
+}
+
+@keyframes cctv-sheen {
+  from {
+    transform: translateX(-115%) skewX(-16deg);
+  }
+  to {
+    transform: translateX(155%) skewX(-16deg);
+  }
+}
+
+@keyframes cctv-success-settle {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cctv-number-pop {
+  0% {
+    transform: translateY(4px) scale(0.98);
+  }
+  70% {
+    transform: translateY(0) scale(1.025);
+  }
+  100% {
+    transform: translateY(0) scale(1);
+  }
+}
+
+@keyframes cctv-alert-in {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes cctv-bar-grow {
+  from {
+    transform: scaleY(0.18);
+  }
+  to {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes cctv-bar-fill {
+  from {
+    transform: scaleX(0.12);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+
 button,
 a,
 input,
@@ -205,6 +289,8 @@ textarea:focus-visible {
 
 .btn,
 .icon-btn {
+  position: relative;
+  overflow: hidden;
   border: 0;
   border-radius: var(--radius);
   display: inline-flex;
@@ -223,9 +309,23 @@ textarea:focus-visible {
   color: white;
 }
 
+.btn.primary::after {
+  content: "";
+  position: absolute;
+  inset: -40% auto -40% -55%;
+  width: 42%;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.32), transparent);
+  transform: translateX(-115%) skewX(-16deg);
+  pointer-events: none;
+}
+
 .btn.primary:hover {
   background: var(--primary-strong);
   transform: translateY(-1px);
+}
+
+.btn.primary:hover::after {
+  animation: cctv-sheen 720ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .btn.outline {
@@ -315,10 +415,22 @@ textarea:focus-visible {
   padding: 18px;
   display: grid;
   align-content: space-between;
+  transition: border-color 180ms ease, box-shadow 180ms ease, transform 180ms ease;
+}
+
+.metric-tile:hover {
+  border-color: oklch(0.780 0.035 170);
+  box-shadow: 0 8px 16px oklch(0.185 0.025 170 / 0.07);
+  transform: translateY(-2px);
 }
 
 .metric-tile svg {
   color: var(--primary);
+  transition: transform 180ms ease;
+}
+
+.metric-tile:hover svg {
+  transform: translateY(-1px) scale(1.04);
 }
 
 .metric-tile span {
@@ -341,6 +453,8 @@ textarea:focus-visible {
 }
 
 .follow-up-panel {
+  position: relative;
+  overflow: hidden;
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(280px, 0.65fr);
   gap: 16px;
@@ -351,6 +465,19 @@ textarea:focus-visible {
   background: var(--ink);
   color: white;
   padding: 20px;
+}
+
+.follow-up-panel::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(110deg, transparent 0 52%, oklch(1 0 0 / 0.08), transparent 70%);
+  transform: translateX(-120%);
+  pointer-events: none;
+}
+
+.follow-up-panel:hover::after {
+  animation: cctv-sheen 900ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .follow-up-copy h2 {
@@ -382,6 +509,13 @@ textarea:focus-visible {
   border: 1px solid oklch(1 0 0 / 0.16);
   border-radius: var(--radius);
   background: oklch(1 0 0 / 0.08);
+  transition: border-color 180ms ease, background 180ms ease, transform 180ms ease;
+}
+
+.follow-up-metrics div:hover {
+  border-color: oklch(1 0 0 / 0.30);
+  background: oklch(1 0 0 / 0.11);
+  transform: translateY(-1px);
 }
 
 .follow-up-metrics span,
@@ -522,6 +656,8 @@ textarea:focus-visible {
 }
 
 .category-visual {
+  position: relative;
+  overflow: hidden;
   min-height: 58px;
   display: flex;
   align-items: center;
@@ -555,17 +691,32 @@ textarea:focus-visible {
 .category-option:hover .category-visual {
   border-color: oklch(0.700 0.050 170);
   background: var(--surface);
+  transform: translateY(-1px);
 }
 
 .category-option:has(input:checked) .category-visual {
   border-color: var(--primary);
   background: var(--primary-soft);
   box-shadow: inset 0 0 0 1px var(--primary);
+  animation: cctv-selected-pop 240ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+.category-option:has(input:checked) .category-visual::after {
+  content: "";
+  position: absolute;
+  top: 13px;
+  right: 13px;
+  width: 8px;
+  height: 14px;
+  border-right: 2px solid var(--primary);
+  border-bottom: 2px solid var(--primary);
+  animation: cctv-check-in 220ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .category-option:has(input:checked) .category-icon {
   background: var(--primary);
   color: white;
+  transform: scale(1.04);
 }
 
 .category-option:has(input:focus-visible) .category-visual {
@@ -574,6 +725,8 @@ textarea:focus-visible {
 }
 
 .number-preview {
+  position: relative;
+  overflow: hidden;
   display: grid;
   gap: 4px;
   padding: 14px 16px;
@@ -582,13 +735,25 @@ textarea:focus-visible {
   border: 1px solid oklch(0.820 0.040 170);
 }
 
+.number-preview::after {
+  content: "";
+  position: absolute;
+  inset: -45% auto -45% -55%;
+  width: 34%;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.55), transparent);
+  animation: cctv-sheen 980ms 140ms cubic-bezier(0.2, 0, 0, 1) both;
+  pointer-events: none;
+}
+
 .number-preview span {
   color: var(--primary-strong);
   font-weight: 800;
 }
 
 .number-preview strong {
+  display: inline-block;
   font-size: 1.55rem;
+  animation: cctv-number-pop 320ms 80ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .number-preview p {
@@ -715,6 +880,7 @@ tr:last-child td {
   border-radius: var(--radius);
   padding: 12px 14px;
   font-weight: 760;
+  animation: cctv-alert-in 180ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .alert.ok {
@@ -728,6 +894,8 @@ tr:last-child td {
 }
 
 .success-strip {
+  position: relative;
+  overflow: hidden;
   display: flex;
   justify-content: space-between;
   gap: 16px;
@@ -736,6 +904,17 @@ tr:last-child td {
   margin-bottom: 16px;
   background: var(--primary);
   color: white;
+  animation: cctv-success-settle 360ms cubic-bezier(0.2, 0, 0, 1) both;
+}
+
+.success-strip::after {
+  content: "";
+  position: absolute;
+  inset: -45% auto -45% -60%;
+  width: 30%;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.22), transparent);
+  animation: cctv-sheen 900ms 120ms cubic-bezier(0.2, 0, 0, 1) both;
+  pointer-events: none;
 }
 
 .success-strip span,
@@ -747,6 +926,7 @@ tr:last-child td {
   display: block;
   margin: 4px 0;
   font-size: 2.15rem;
+  animation: cctv-number-pop 380ms 120ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .success-actions {
@@ -869,6 +1049,8 @@ tr:last-child td {
   height: 100%;
   border-radius: inherit;
   background: var(--primary);
+  transform-origin: left center;
+  animation: cctv-bar-fill 420ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .trend-chart {
@@ -896,6 +1078,8 @@ tr:last-child td {
   align-self: end;
   border-radius: var(--radius) var(--radius) 0 0;
   background: linear-gradient(180deg, var(--primary), var(--primary-strong));
+  transform-origin: bottom center;
+  animation: cctv-bar-grow 460ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
 .quick-filter-row {
@@ -1217,7 +1401,18 @@ tr:last-child td {
   *,
   *::before,
   *::after {
+    animation-duration: 1ms !important;
+    animation-iteration-count: 1 !important;
     transition-duration: 1ms !important;
     scroll-behavior: auto !important;
+  }
+
+  .btn.primary:hover,
+  .metric-tile:hover,
+  .metric-tile:hover svg,
+  .follow-up-metrics div:hover,
+  .category-option:hover .category-visual,
+  .category-option:has(input:checked) .category-icon {
+    transform: none !important;
   }
 }

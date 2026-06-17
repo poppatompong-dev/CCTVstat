@@ -93,6 +93,7 @@
 - [x] เพิ่มเลขคำร้องโดยประมาณก่อนบันทึก
 - [x] เพิ่ม smart defaults จากข้อมูลที่ใช้บ่อยจริง
 - [x] เปลี่ยนหมวดหมู่จาก dropdown เป็น tile picker พร้อมไอคอนและ radio semantics
+- [x] เพิ่ม CSS micro-animations สำหรับ selected state, เลขคำร้อง, success state, alerts และ data tiles พร้อม reduced-motion guard
 
 เกณฑ์ผ่าน:
 - [x] field บังคับไม่เกิน 4 field
