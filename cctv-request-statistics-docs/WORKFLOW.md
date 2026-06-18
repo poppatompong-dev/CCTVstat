@@ -75,11 +75,12 @@
 ```text
 เปิดคำร้องที่มีเลขแล้ว
 -> เลือกประเภทหลักฐาน
--> เลือกไฟล์
--> ระบบตรวจ extension, MIME type, และขนาดไฟล์
+-> เลือกไฟล์หนึ่งไฟล์หรือหลายไฟล์
+-> ระบบแสดง preview/thumbnail สำหรับไฟล์ที่เลือก
+-> ระบบตรวจ extension, จำนวนไฟล์, และขนาดไฟล์ต่อไฟล์
 -> upload ไฟล์ไป Vercel Blob Private Storage
 -> บันทึก metadata ใน Neon
--> แสดงรายการไฟล์แนบในหน้าคำร้อง
+-> แสดง thumbnail/gallery ของไฟล์แนบในหน้าคำร้อง
 ```
 
 กติกา:
@@ -87,16 +88,19 @@
 - ไม่รับวิดีโอ CCTV
 - ห้ามเปิดไฟล์ผ่าน public URL ตรง ๆ
 - ดาวน์โหลดต้องผ่าน endpoint ของระบบ
-- ลบไฟล์ต้องถามยืนยัน
+- ลบไฟล์ต้องถามยืนยันด้วย modal
+- upload/delete/save ต้องมี modal หรือ pending state ให้ผู้ใช้รู้ว่าระบบกำลังทำงาน
+- default อัปโหลดได้สูงสุด 5 ไฟล์ต่อครั้ง และขนาดไม่เกิน 4 MB ต่อไฟล์
 
 Metadata ที่ควรเก็บ:
 - `request_id`
 - `evidence_type_id`
 - `original_file_name`
-- `stored_file_name`
-- `storage_key`
-- `mime_type`
-- `file_size`
+- `blob_url`
+- `download_url`
+- `blob_pathname`
+- `content_type`
+- `size_bytes`
 - `note`
 - `uploaded_at`
 
@@ -244,10 +248,13 @@ https://github.com/poppatompong-dev/CCTVstat.git
 Env vars ที่คาดว่าจะต้องมี:
 - `DATABASE_URL`
 - `APP_PASSWORD`
+- `SESSION_SECRET`
 - `BLOB_READ_WRITE_TOKEN`
-- `MAX_UPLOAD_SIZE_MB`
-- `APP_NAME`
 - `REPORT_ORGANIZATION_NAME`
+- `FOLLOW_UP_DAYS` optional
+- `MAX_UPLOAD_BYTES` optional
+- `MAX_UPLOAD_FILES` optional
+- `PERF_DB_PROBE` optional สำหรับ diagnostic ชั่วคราว
 
 ## 13. Failure Workflows
 

@@ -68,14 +68,14 @@ Blocked:
 
 ## 8. Backup
 สำรอง:
-1. Database เช่น `app.db`
-2. โฟลเดอร์ `uploads/`
-3. config เช่น `.env`
+1. Neon PostgreSQL data หรือ export จากระบบ
+2. Vercel Blob objects และ metadata ใน `request_attachments`
+3. Vercel Environment Variables / `.env.local` ในเครื่องผู้ดูแล
 
 ## 9. Secret Handling
 - ห้ามบันทึกค่า `DATABASE_URL`, blob token, หรือ `APP_PASSWORD` ลง markdown
 - ค่า secret ต้องอยู่ใน `.env.local` สำหรับ local development และ Vercel Environment Variables สำหรับ deployment
 - `.env.local` ต้องไม่ถูก commit
 - หาก secret ถูกเผยแพร่ในที่สาธารณะ ควร rotate ทันที
-- ได้รับค่า `DATABASE_URL` และ `APP_PASSWORD` แล้ว แต่ต้องเก็บเป็น env secret เท่านั้น
-- `BLOB_READ_WRITE_TOKEN` มี/พร้อมตั้งค่าแล้ว แต่ต้องเก็บเป็น env secret เท่านั้น
+- `DATABASE_URL`, `APP_PASSWORD`, `SESSION_SECRET`, และ `BLOB_READ_WRITE_TOKEN` ต้องเก็บเป็น env secret เท่านั้น
+- หากเปิด `PERF_DB_PROBE=1` เพื่อ diagnostic ต้องปิดหลังเก็บ log เสร็จ เพื่อลด query เพิ่มเติมบน production

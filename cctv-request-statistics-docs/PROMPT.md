@@ -12,14 +12,14 @@ Build a very simple internal web app for recording statistical categories of CCT
 > Keep the system extremely simple. Do not create unnecessary workload for staff.
 
 ## Recommended Stack
-- Frontend: React or Next.js
+- Frontend: Next.js App Router / React
 - Language: TypeScript
-- Styling: Tailwind CSS or simple CSS
-- Database: SQLite
-- File storage: local controlled upload folder
+- Styling: CSS theme for Thai municipal dashboard UI
+- Database: Neon PostgreSQL via `@neondatabase/serverless`
+- File storage: Vercel Blob Private Storage
 - Export: Excel and PDF
-- Authentication: not required in version 1
-- Deployment: local PC or internal office server
+- Authentication: shared password access gate for trial deployment
+- Deployment: Vercel via GitHub
 
 ## Main Pages
 1. Add New Request
@@ -78,6 +78,18 @@ Do not require:
 
 ## Evidence Attachment
 File upload is optional and must never block quick request recording. Staff can save a request first, get the reference number, and upload evidence later.
+
+Attachments:
+- support PDF, JPG, JPEG, PNG, DOC, DOCX
+- do not support CCTV video upload in version 1
+- store files in Vercel Blob private storage
+- store metadata in Neon PostgreSQL
+- download through authenticated application endpoints, not direct public Blob URLs
+- support multiple files per upload action, controlled by `MAX_UPLOAD_FILES`
+- limit per-file size with `MAX_UPLOAD_BYTES`
+- show selected-file preview before upload
+- show uploaded-file thumbnail/gallery after upload
+- show modal/pending feedback for upload and delete actions
 
 Supported evidence types:
 1. ใบคำร้อง

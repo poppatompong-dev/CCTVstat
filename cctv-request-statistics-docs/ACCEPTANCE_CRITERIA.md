@@ -30,6 +30,9 @@
 | 23 | Duplicate hint ไม่ block การบันทึก | ใช่ |
 | 24 | Location autocomplete ยังพิมพ์อิสระได้ | ใช่ |
 | 25 | Backup เป็น Excel หลาย sheet | ใช่ |
+| 26 | อัปโหลดหลักฐานหลายไฟล์ต่อครั้งได้ | ใช่ |
+| 27 | มี thumbnail/gallery สำหรับไฟล์แนบ | ใช่ |
+| 28 | มี modal/pending state สำหรับ action สำคัญ | ใช่ |
 
 ## 2. UX Criteria
 | เกณฑ์ | ค่าเป้าหมาย |
@@ -43,6 +46,7 @@
 | touch target | ปุ่มและ dropdown ต้องกดง่ายบนจอสัมผัส |
 | smart feature | ห้ามเพิ่ม required field ใหม่ |
 | smart feature | ห้ามทำให้เพิ่มคำร้องช้ากว่า 30 วินาที |
+| action feedback | ต้องมี modal/pending state ตอนบันทึก อัปโหลด หรือลบ |
 
 ## 3. Request Number Criteria
 | สถานการณ์ | ผลที่ต้องได้ |
@@ -60,10 +64,13 @@
 | เกณฑ์ | รายละเอียด |
 |---|---|
 | แนบไฟล์ได้ | PDF, JPG, JPEG, PNG, DOC, DOCX |
+| แนบหลายไฟล์ | ต้องได้ตาม `MAX_UPLOAD_FILES` |
+| ขนาดไฟล์ | จำกัดต่อไฟล์ตาม `MAX_UPLOAD_BYTES` |
 | Block ไฟล์อันตราย | EXE, BAT, CMD, JS, SH, PHP, HTML |
 | แสดงรายการไฟล์แนบ | ต้องมี |
+| Thumbnail/gallery | รูปภาพต้องเห็น thumbnail และเอกสารต้องเห็นชนิดไฟล์ |
 | ดาวน์โหลดไฟล์ | ต้องได้ |
-| ลบไฟล์แนบ | ต้องถามยืนยัน |
+| ลบไฟล์แนบ | ต้องถามยืนยันด้วย modal |
 | Public URL | ต้องไม่มี |
 
 ## 5. Privacy Criteria

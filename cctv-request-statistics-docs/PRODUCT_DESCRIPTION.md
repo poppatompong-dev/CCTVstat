@@ -33,7 +33,7 @@ Users can search by request number or location and filter by date range, request
 
 ### 5. Attachments
 
-After a request is created, users can optionally upload supporting evidence such as request forms, police reports, official letters, images, or Word/PDF documents. Attachments are stored privately and downloaded through the application.
+After a request is created, users can optionally upload supporting evidence such as request forms, police reports, official letters, images, or Word/PDF documents. Users can select multiple files per upload action, preview selected files, and review uploaded files in a thumbnail/gallery layout. Attachments are stored privately and downloaded through the application.
 
 ### 6. Master Data Management
 
@@ -68,10 +68,13 @@ Users can generate reports by date range and filters. Reports include totals, ca
 - Soft-deleted requests are hidden from normal lists and reports.
 - Master data save returns users to the correct settings page.
 - Attachments can be uploaded, listed, downloaded, and deleted when Blob credentials are configured.
+- Multiple attachments can be uploaded in one action, with file count and per-file size limits.
+- Image attachments show thumbnails, and document attachments show clear file-type cards.
+- Save, upload, delete, and confirmation flows provide visible modal/pending feedback.
 - Reports and exports respect filters.
 - Quick filters show the expected request subsets.
 - Local development login works on `127.0.0.1:3001`.
 
 ## Current Status
 
-The MVP application code is complete for local testing. Lint and production build pass. Local login and dashboard access have been verified. Remaining work before real trial usage is deployment/runtime validation on Vercel with real environment variables, Neon PostgreSQL, and Vercel Blob.
+The MVP application code is complete for local testing. Lint and production build pass. Local dashboard, request list, request creation page, reports, performance instrumentation, and attachment UX have been verified at build/smoke-test level. Remaining work before real trial usage is deployment/runtime validation on Vercel with real environment variables, Neon PostgreSQL, and Vercel Blob.

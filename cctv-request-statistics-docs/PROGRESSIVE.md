@@ -24,7 +24,7 @@
 
 หมายเหตุสถานะ:
 - checkbox ที่ยังว่างในเอกสารนี้คือการทดสอบกับ environment จริง เช่น Vercel, Neon และ Vercel Blob หรือ future requirement ที่ยังไม่อยู่ใน version 1
-- ไม่พบงาน code/docs ใน local repo ที่ค้างสำหรับ MVP trial หลังรอบ performance optimization นี้
+- ไม่พบงาน code/docs ใน local repo ที่ค้างสำหรับ MVP trial หลังรอบ performance optimization, attachment UX และ documentation sync ล่าสุด
 
 ## [x] Slice 0: Decision Lock
 
@@ -320,7 +320,7 @@ Environment ที่ต้องตั้ง:
 
 ถ้าต้องการให้ MVP ทดลองใช้จริง:
 1. [x] ตั้ง env หลักบน Vercel
-2. [ ] deploy โค้ด performance optimization ล่าสุดขึ้น Vercel
+2. [ ] deploy โค้ด performance optimization และ attachment UX ล่าสุดขึ้น Vercel
 3. [ ] เปิด Vercel deployment URL
 4. [ ] ทดสอบ login ด้วย shared password
 5. [ ] เพิ่มคำร้องจริง 2-3 รายการ
