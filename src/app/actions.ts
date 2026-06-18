@@ -20,10 +20,16 @@ import type { MasterKind } from "@/lib/types";
 const allowedFileExt = new Set(["pdf", "jpg", "jpeg", "png", "doc", "docx"]);
 const blockedFileExt = new Set(["exe", "bat", "cmd", "js", "sh", "php", "html"]);
 const defaultMaxUploadBytes = 4 * 1024 * 1024;
+const defaultMaxUploadFiles = 5;
 
 function maxUploadBytes() {
   const value = Number(process.env.MAX_UPLOAD_BYTES || defaultMaxUploadBytes);
   return Number.isFinite(value) && value > 0 ? value : defaultMaxUploadBytes;
+}
+
+function maxUploadFiles() {
+  const value = Number(process.env.MAX_UPLOAD_FILES || defaultMaxUploadFiles);
+  return Number.isFinite(value) && value > 0 ? value : defaultMaxUploadFiles;
 }
 
 function message(path: string, text: string, type: "ok" | "error" = "ok"): never {
@@ -133,41 +139,55 @@ function safePathSegment(value: string) {
 
 export async function uploadAttachmentAction(requestId: number, requestNo: string, formData: FormData) {
   await requireAuth();
-  const file = formData.get("file");
+  const files = formData
+    .getAll("files")
+    .concat(formData.getAll("file"))
+    .filter((value): value is File => value instanceof File && value.size > 0);
   const evidenceTypeId = Number(formData.get("evidence_type_id"));
   const note = String(formData.get("note") || "").trim() || null;
 
-  if (!(file instanceof File) || file.size === 0) {
+  if (!files.length) {
     message(`/requests/${requestId}`, "กรุณาเลือกไฟล์", "error");
   }
-  if (file.size > maxUploadBytes()) {
-    message(`/requests/${requestId}`, `ไฟล์มีขนาดเกิน ${(maxUploadBytes() / 1024 / 1024).toFixed(1)} MB`, "error");
+  if (!Number.isInteger(evidenceTypeId) || evidenceTypeId <= 0) {
+    message(`/requests/${requestId}`, "กรุณาเลือกประเภทหลักฐาน", "error");
+  }
+  if (files.length > maxUploadFiles()) {
+    message(`/requests/${requestId}`, `อัปโหลดได้สูงสุด ${maxUploadFiles()} ไฟล์ต่อครั้ง`, "error");
   }
 
-  const ext = fileExtension(file.name);
-  if (!allowedFileExt.has(ext) || blockedFileExt.has(ext)) {
-    message(`/requests/${requestId}`, "ไม่รองรับประเภทไฟล์นี้", "error");
+  for (const file of files) {
+    if (file.size > maxUploadBytes()) {
+      message(`/requests/${requestId}`, `ไฟล์ ${file.name} มีขนาดเกิน ${(maxUploadBytes() / 1024 / 1024).toFixed(1)} MB`, "error");
+    }
+
+    const ext = fileExtension(file.name);
+    if (!allowedFileExt.has(ext) || blockedFileExt.has(ext)) {
+      message(`/requests/${requestId}`, `ไม่รองรับประเภทไฟล์ ${file.name}`, "error");
+    }
   }
 
   try {
-    const pathname = `cctv-requests/${safePathSegment(requestNo)}/${Date.now()}-${safePathSegment(file.name)}`;
-    const blob = await put(pathname, file, {
-      access: "private",
-      addRandomSuffix: true,
-      contentType: file.type || undefined,
-    });
+    for (const file of files) {
+      const pathname = `cctv-requests/${safePathSegment(requestNo)}/${Date.now()}-${safePathSegment(file.name)}`;
+      const blob = await put(pathname, file, {
+        access: "private",
+        addRandomSuffix: true,
+        contentType: file.type || undefined,
+      });
 
-    await insertAttachment({
-      requestId,
-      evidenceTypeId,
-      originalFileName: file.name,
-      blobUrl: blob.url,
-      downloadUrl: blob.downloadUrl || getDownloadUrl(blob.url),
-      blobPathname: blob.pathname,
-      contentType: file.type || null,
-      sizeBytes: file.size,
-      note,
-    });
+      await insertAttachment({
+        requestId,
+        evidenceTypeId,
+        originalFileName: file.name,
+        blobUrl: blob.url,
+        downloadUrl: blob.downloadUrl || getDownloadUrl(blob.url),
+        blobPathname: blob.pathname,
+        contentType: file.type || null,
+        sizeBytes: file.size,
+        note,
+      });
+    }
   } catch (error) {
     const text = error instanceof Error && error.message.includes("No blob credentials")
       ? "ยังไม่ได้ตั้งค่า BLOB_READ_WRITE_TOKEN"
@@ -176,7 +196,7 @@ export async function uploadAttachmentAction(requestId: number, requestNo: strin
   }
 
   revalidatePath(`/requests/${requestId}`);
-  message(`/requests/${requestId}`, "อัปโหลดหลักฐานสำเร็จ");
+  message(`/requests/${requestId}`, `อัปโหลดหลักฐานสำเร็จ ${files.length} ไฟล์`);
 }
 
 export async function deleteAttachmentAction(requestId: number, attachmentId: number) {

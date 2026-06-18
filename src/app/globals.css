@@ -1133,6 +1133,160 @@ tr:last-child td {
   color: var(--muted);
 }
 
+.upload-preview {
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+  border: 1px solid var(--border);
+  background: oklch(0.985 0.006 210);
+}
+
+.upload-preview-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: var(--muted);
+}
+
+.upload-preview-head strong {
+  color: var(--text);
+}
+
+.attachment-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.upload-preview .attachment-grid {
+  margin-top: 0;
+}
+
+.attachment-card {
+  min-width: 0;
+  display: grid;
+  grid-template-columns: 76px minmax(0, 1fr);
+  gap: 12px;
+  align-items: center;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow-soft);
+}
+
+.attachment-card.uploaded {
+  grid-template-columns: 1fr;
+  align-items: stretch;
+}
+
+.attachment-thumb {
+  width: 76px;
+  aspect-ratio: 1;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  border: 1px solid var(--border);
+  border-radius: calc(var(--radius) - 2px);
+  background: linear-gradient(135deg, oklch(0.96 0.008 225), oklch(0.99 0.004 170));
+  color: var(--muted);
+}
+
+.attachment-card.uploaded .attachment-thumb {
+  width: 100%;
+  aspect-ratio: 4 / 3;
+  text-decoration: none;
+}
+
+.attachment-thumb img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.attachment-thumb span {
+  display: grid;
+  gap: 6px;
+  place-items: center;
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.attachment-card strong {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.attachment-card small,
+.attachment-card p {
+  margin: 3px 0 0;
+  color: var(--muted);
+}
+
+.attachment-card-body {
+  min-width: 0;
+}
+
+.attached-files .row-actions {
+  justify-content: space-between;
+}
+
+.action-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+  background: oklch(0.18 0.02 245 / 0.42);
+}
+
+.action-modal {
+  width: min(420px, 100%);
+  display: flex;
+  gap: 14px;
+  align-items: center;
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  background: var(--surface-raised);
+  box-shadow: var(--shadow);
+}
+
+.action-modal.confirm {
+  display: grid;
+  align-items: stretch;
+}
+
+.action-modal h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.action-modal p {
+  margin: 4px 0 0;
+  color: var(--muted);
+}
+
+.modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.spin {
+  animation: cctv-spin 820ms linear infinite;
+}
+
+@keyframes cctv-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
 .danger-zone {
   margin-top: 18px;
   padding: 16px;

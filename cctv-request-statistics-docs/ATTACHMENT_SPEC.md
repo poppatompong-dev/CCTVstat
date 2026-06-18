@@ -42,7 +42,9 @@
 `.exe`, `.bat`, `.cmd`, `.js`, `.sh`, `.php`, `.html`
 
 ## 7. ขนาดไฟล์
-ค่าเริ่มต้นสำหรับช่วงทดลองบน Vercel server upload: 4 MB ต่อไฟล์ (`MAX_UPLOAD_BYTES=4194304`) และควรปรับได้จาก config หากเปลี่ยนเป็น client upload หรือ infrastructure ที่รองรับไฟล์ใหญ่กว่า
+ค่าเริ่มต้นสำหรับช่วงทดลองบน Vercel server upload: 4 MB ต่อไฟล์ (`MAX_UPLOAD_BYTES=4194304`) และอัปโหลดได้สูงสุด 5 ไฟล์ต่อครั้ง (`MAX_UPLOAD_FILES=5`) เพื่อคุม body size และ serverless runtime
+
+UI ต้องแสดง preview ก่อนอัปโหลดสำหรับรูปภาพ และแสดงการ์ดชนิดไฟล์สำหรับ PDF/DOC/DOCX หลังอัปโหลดต้องแสดง thumbnail/การ์ดไฟล์ผ่าน endpoint ของระบบ ไม่เปิด Blob URL ตรงใน UI
 
 ## 8. Blob Path Structure
 ```text

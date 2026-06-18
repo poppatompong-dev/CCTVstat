@@ -28,6 +28,7 @@ BLOB_READ_WRITE_TOKEN="..."
 APP_PASSWORD="..."
 SESSION_SECRET="..."
 MAX_UPLOAD_BYTES=4194304
+MAX_UPLOAD_FILES=5
 REPORT_ORGANIZATION_NAME="กลุ่มงานสถิติข้อมูลและสารสนเทศ"
 FOLLOW_UP_DAYS=7
 ```
@@ -44,6 +45,7 @@ Environment ที่จำเป็นบน Vercel production:
 | `REPORT_ORGANIZATION_NAME` | Yes | ชื่อหน่วยงานในรายงาน |
 | `FOLLOW_UP_DAYS` | No | default 7 |
 | `MAX_UPLOAD_BYTES` | No | default 4194304 bytes |
+| `MAX_UPLOAD_FILES` | No | default 5 files per upload action |
 | `PERF_DB_PROBE` | No | ตั้งเป็น `1` เฉพาะตอน diagnostic เพื่อ log `SELECT 1` และ active request count; ไม่ควรเปิดค้างถ้าไม่ต้องวัด |
 
 ## 4. Folder Structure

@@ -72,3 +72,13 @@
 - `npm.cmd run build` ผ่าน
 - local smoke test ผ่าน `/`, `/requests`, `/reports`, `/api/reports/excel`
 - production local รอบแรกหลังแก้ `/` ลดจากประมาณ 2146ms เหลือ 324ms และ `/api/requests/next-number` ลดจากประมาณ 1766ms เหลือ 102ms
+
+## 1.3.0 - Attachment UX and Action Feedback
+### Added
+- เพิ่มการอัปโหลดหลักฐานหลายไฟล์ต่อครั้ง โดยคุมด้วย `MAX_UPLOAD_FILES`
+- เพิ่ม preview ไฟล์ก่อนอัปโหลด และ thumbnail/gallery สำหรับไฟล์แนบที่อัปโหลดแล้ว
+- เพิ่ม modal แสดงสถานะระหว่างบันทึก/อัปโหลด/ลบ และ modal ยืนยันก่อน action ที่มีผลกับข้อมูล
+
+### Changed
+- เพิ่ม Server Action body limit เป็น 25 MB เพื่อรองรับหลายไฟล์ โดยยังคุมขนาดรายไฟล์ด้วย `MAX_UPLOAD_BYTES`
+- ปรับหน้ารายละเอียดคำร้องให้แสดงไฟล์แนบเป็นการ์ดพร้อม thumbnail/ชนิดไฟล์แทนรายการแถวอย่างเดียว

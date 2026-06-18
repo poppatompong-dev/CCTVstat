@@ -160,6 +160,9 @@
 - [x] Upload ไป Vercel Blob Private Storage
 - [x] เก็บ metadata ใน Neon
 - [x] List/download/delete attachment
+- [x] Upload หลายไฟล์ต่อครั้ง โดยยังจำกัดขนาดรายไฟล์และจำนวนไฟล์ต่อครั้ง
+- [x] แสดง preview ก่อนอัปโหลด และ thumbnail/gallery หลังอัปโหลด
+- [x] แสดง modal สถานะระหว่าง upload/delete เพื่อให้ผู้ใช้รู้ว่าระบบกำลังทำงาน
 - [x] ตรวจ extension
 - [x] block `.exe`, `.bat`, `.cmd`, `.js`, `.sh`, `.php`, `.html`
 - [x] ไม่ rename ไฟล์แนบเดิมเมื่อแก้เลขคำร้อง
@@ -175,6 +178,7 @@
 เหลือ:
 - [ ] ทดสอบ upload/download/delete กับ Vercel Blob token จริง (external runtime)
 - [x] เพิ่มขนาดไฟล์สูงสุดที่ชัดเจนใน env/spec/runtime
+- [x] เพิ่มจำนวนไฟล์สูงสุดต่อครั้งผ่าน `MAX_UPLOAD_FILES`
 - [x] เพิ่ม confirmation dialog ฝั่ง client ก่อนลบไฟล์แนบ
 
 ## [x] Slice 7: Reports and Exports

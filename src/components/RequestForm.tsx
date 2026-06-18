@@ -2,6 +2,7 @@ import type { MasterRow, RequestRow } from "@/lib/types";
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { DuplicateHint } from "@/components/DuplicateHint";
 import { RequestNumberPreview } from "@/components/RequestNumberPreview";
+import { SubmitButton } from "@/components/SubmitButton";
 
 export function RequestForm({
   action,
@@ -102,9 +103,13 @@ export function RequestForm({
       </label>
 
       <div className="form-actions span-2">
-        <button className="btn primary" type="submit">
+        <SubmitButton
+          pendingLabel="กำลังบันทึก..."
+          modalTitle="กำลังบันทึกคำร้อง"
+          modalDescription="ระบบกำลังตรวจสอบข้อมูลและบันทึกลงฐานข้อมูล"
+        >
           {submitLabel}
-        </button>
+        </SubmitButton>
       </div>
     </form>
   );

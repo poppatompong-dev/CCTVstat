@@ -1,17 +1,16 @@
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { Paperclip, Trash2 } from "lucide-react";
+import { Trash2 } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
-import { formatThaiDateTime } from "@/lib/dates";
-import { formatBytes, optionalText } from "@/lib/format";
 import {
-  deleteAttachmentAction,
   deleteRequestAction,
   updateRequestAction,
   uploadAttachmentAction,
 } from "@/app/actions";
 import { getAttachments, getMasters, getRequest } from "@/lib/db";
 import { perfLog, perfStart, timed } from "@/lib/perf";
+import { AttachmentGallery } from "@/components/AttachmentGallery";
+import { AttachmentUploadForm } from "@/components/AttachmentUploadForm";
 import { AppShell } from "@/components/AppShell";
 import { CopyButton } from "@/components/CopyButton";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
@@ -82,67 +81,14 @@ export default async function RequestDetailPage({
       <section className="panel">
         <div className="section-head">
           <h2>หลักฐานแนบ</h2>
-          <span className="muted">รองรับ PDF, JPG, PNG, DOC, DOCX สูงสุด 4 MB</span>
+          <span className="muted">รองรับ PDF, JPG, PNG, DOC, DOCX สูงสุด 4 MB ต่อไฟล์</span>
         </div>
-        <form
+        <AttachmentUploadForm
           action={uploadAttachmentAction.bind(null, request.id, request.request_no)}
-          className="form-grid"
-        >
-          <label className="field">
-            <span>ประเภทหลักฐาน</span>
-            <select name="evidence_type_id" required>
-              {masters.evidenceTypes.filter((row) => row.is_active).map((row) => (
-                <option key={row.id} value={row.id}>{row.name}</option>
-              ))}
-            </select>
-          </label>
-          <label className="field">
-            <span>เลือกไฟล์</span>
-            <input name="file" type="file" accept=".pdf,.jpg,.jpeg,.png,.doc,.docx" required />
-          </label>
-          <label className="field span-2">
-            <span>หมายเหตุไฟล์</span>
-            <input name="note" placeholder="ไม่บังคับ" />
-          </label>
-          <div className="form-actions span-2">
-            <button className="btn primary" type="submit">
-              <Paperclip size={18} />
-              อัปโหลดไฟล์
-            </button>
-          </div>
-        </form>
+          evidenceTypes={masters.evidenceTypes}
+        />
 
-        <div className="attachment-list">
-          {attachments.length ? (
-            attachments.map((attachment) => (
-              <div className="attachment-row" key={attachment.id}>
-                <div>
-                  <strong>{attachment.evidence_type_name}</strong>
-                  <p>{attachment.original_file_name}</p>
-                  <small>
-                    {formatBytes(attachment.size_bytes)} · {formatThaiDateTime(attachment.uploaded_at)} · {optionalText(attachment.note)}
-                  </small>
-                </div>
-                <div className="row-actions">
-                  <a className="btn small outline" href={`/api/attachments/${attachment.id}/download`}>
-                    ดาวน์โหลด
-                  </a>
-                  <form action={deleteAttachmentAction.bind(null, request.id, attachment.id)}>
-                    <ConfirmSubmitButton
-                      className="icon-btn danger"
-                      message="ต้องการลบไฟล์แนบนี้ใช่หรือไม่"
-                      ariaLabel="ลบไฟล์แนบ"
-                    >
-                      <Trash2 size={16} />
-                    </ConfirmSubmitButton>
-                  </form>
-                </div>
-              </div>
-            ))
-          ) : (
-            <div className="empty-inline">ยังไม่มีหลักฐานแนบ</div>
-          )}
-        </div>
+        <AttachmentGallery requestId={request.id} attachments={attachments} />
       </section>
 
       <section className="danger-zone">
