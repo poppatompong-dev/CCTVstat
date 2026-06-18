@@ -4,6 +4,11 @@ import { formatThaiDate } from "@/lib/dates";
 import { optionalText } from "@/lib/format";
 import type { RequestRow } from "@/lib/types";
 
+function statusClass(key: string | null) {
+  const semantic = key ? key.replace(/_/g, "-") : "other";
+  return `status-pill status-${semantic}`;
+}
+
 export function RequestList({ rows }: { rows: RequestRow[] }) {
   if (!rows.length) {
     return (
@@ -40,7 +45,7 @@ export function RequestList({ rows }: { rows: RequestRow[] }) {
               <td data-label="ประเภทผู้ขอ">{row.requester_type_name}</td>
               <td data-label="หมวดหมู่">{row.category_name}</td>
               <td data-label="สถานะ">
-                <span className="status-pill">{row.status_name}</span>
+                <span className={statusClass(row.status_semantic_key)}>{row.status_name}</span>
               </td>
               <td data-label="สถานที่">{optionalText(row.location_text)}</td>
               <td data-label="ไฟล์">{row.attachment_count}</td>

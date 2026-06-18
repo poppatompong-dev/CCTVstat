@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  ShieldCheck,
   Tags,
   UsersRound,
 } from "lucide-react";
@@ -56,6 +57,19 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </form>
       </aside>
       <div className="main-rail">
+        <header className="desktop-topbar" aria-label="แถบนำทางผู้บริหาร">
+          <div>
+            <p className="kicker">Executive Operations Center</p>
+            <strong>ภาพรวมคำร้องและสถานะการให้บริการ CCTV</strong>
+          </div>
+          <div className="topbar-status">
+            <span>
+              <ShieldCheck size={16} aria-hidden="true" />
+              Management-ready
+            </span>
+            <span>Live workspace</span>
+          </div>
+        </header>
         <header className="mobile-topbar">
           <Link href="/" className="brand-lockup compact">
             <span className="brand-icon">
