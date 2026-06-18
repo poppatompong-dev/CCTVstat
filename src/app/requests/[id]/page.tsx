@@ -76,7 +76,7 @@ export default async function RequestDetailPage({
       <section className="panel">
         <div className="section-head">
           <h2>หลักฐานแนบ</h2>
-          <span className="muted">รองรับ PDF, JPG, PNG, DOC, DOCX</span>
+          <span className="muted">รองรับ PDF, JPG, PNG, DOC, DOCX สูงสุด 4 MB</span>
         </div>
         <form
           action={uploadAttachmentAction.bind(null, request.id, request.request_no)}
