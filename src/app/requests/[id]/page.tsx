@@ -11,6 +11,7 @@ import {
   uploadAttachmentAction,
 } from "@/app/actions";
 import { getAttachments, getMasters, getRequest } from "@/lib/db";
+import { perfLog, perfStart, timed } from "@/lib/perf";
 import { AppShell } from "@/components/AppShell";
 import { CopyButton } from "@/components/CopyButton";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
@@ -27,13 +28,18 @@ export default async function RequestDetailPage({
   params: Promise<{ id: string }>;
   searchParams: SearchParams;
 }) {
-  await requireAuth();
-  const [{ id }, feedbackParams] = await Promise.all([params, searchParams]);
+  const routeStart = perfStart();
+  try {
+  await timed("/requests/[id] requireAuth", () => requireAuth());
+  const [{ id }, feedbackParams] = await Promise.all([
+    timed("/requests/[id] params", () => params),
+    timed("/requests/[id] searchParams", () => searchParams),
+  ]);
   const requestId = Number(id);
   const [request, masters, attachments] = await Promise.all([
-    getRequest(requestId),
-    getMasters(),
-    getAttachments(requestId),
+    timed("/requests/[id] getRequest", () => getRequest(requestId)),
+    timed("/requests/[id] getMasters", () => getMasters()),
+    timed("/requests/[id] getAttachments", () => getAttachments(requestId)),
   ]);
 
   if (!request) notFound();
@@ -156,4 +162,7 @@ export default async function RequestDetailPage({
       </section>
     </AppShell>
   );
+  } finally {
+    perfLog("/requests/[id] total", routeStart);
+  }
 }

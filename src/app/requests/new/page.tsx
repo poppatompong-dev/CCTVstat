@@ -1,6 +1,7 @@
 import { requireAuth } from "@/lib/auth";
 import { getLocationSuggestions, getMasters, getSmartDefaults } from "@/lib/db";
 import { todayInput } from "@/lib/dates";
+import { perfLog, perfStart, timed } from "@/lib/perf";
 import { createRequestAction } from "@/app/actions";
 import { AppShell } from "@/components/AppShell";
 import { Feedback } from "@/components/Feedback";
@@ -10,12 +11,14 @@ import { RequestForm } from "@/components/RequestForm";
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
 
 export default async function NewRequestPage({ searchParams }: { searchParams: SearchParams }) {
-  await requireAuth();
+  const routeStart = perfStart();
+  try {
+  await timed("/requests/new requireAuth", () => requireAuth());
   const [masters, smartDefaults, locationSuggestions, params] = await Promise.all([
-    getMasters(),
-    getSmartDefaults(),
-    getLocationSuggestions(),
-    searchParams,
+    timed("/requests/new getMasters", () => getMasters()),
+    timed("/requests/new getSmartDefaults", () => getSmartDefaults()),
+    timed("/requests/new getLocationSuggestions", () => getLocationSuggestions()),
+    timed("/requests/new searchParams", () => searchParams),
   ]);
   const defaultStatus = masters.statuses.find((row) => row.name === "รับคำร้องแล้ว") ?? masters.statuses[0];
   const defaultRequester = masters.requesterTypes.find((row) => row.name === "ประชาชน") ?? masters.requesterTypes[0];
@@ -59,4 +62,7 @@ export default async function NewRequestPage({ searchParams }: { searchParams: S
       </section>
     </AppShell>
   );
+  } finally {
+    perfLog("/requests/new total", routeStart);
+  }
 }

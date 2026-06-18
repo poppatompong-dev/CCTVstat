@@ -26,12 +26,25 @@
 DATABASE_URL="..."
 BLOB_READ_WRITE_TOKEN="..."
 APP_PASSWORD="..."
-MAX_UPLOAD_SIZE_MB=10
-APP_NAME="CCTV Request Statistics System"
+SESSION_SECRET="..."
+MAX_UPLOAD_BYTES=4194304
 REPORT_ORGANIZATION_NAME="กลุ่มงานสถิติข้อมูลและสารสนเทศ"
+FOLLOW_UP_DAYS=7
 ```
 
 ห้าม commit ค่า secret จริง เช่น `DATABASE_URL`, `BLOB_READ_WRITE_TOKEN`, หรือ `APP_PASSWORD`
+
+Environment ที่จำเป็นบน Vercel production:
+| Variable | Required | Notes |
+|---|---:|---|
+| `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
+| `APP_PASSWORD` | Yes | shared password สำหรับ login ทดลอง |
+| `SESSION_SECRET` | Yes | ใช้ sign session cookie; ควรแยกจาก `APP_PASSWORD` |
+| `BLOB_READ_WRITE_TOKEN` | Yes | token จาก Vercel Blob private store |
+| `REPORT_ORGANIZATION_NAME` | Yes | ชื่อหน่วยงานในรายงาน |
+| `FOLLOW_UP_DAYS` | No | default 7 |
+| `MAX_UPLOAD_BYTES` | No | default 4194304 bytes |
+| `PERF_DB_PROBE` | No | ตั้งเป็น `1` เฉพาะตอน diagnostic เพื่อ log `SELECT 1` และ active request count; ไม่ควรเปิดค้างถ้าไม่ต้องวัด |
 
 ## 4. Folder Structure
 ```text

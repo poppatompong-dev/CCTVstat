@@ -12,18 +12,19 @@
 | MVP application code | เสร็จแล้ว | build/lint ผ่าน แก้ master settings redirect แล้ว และ push ขึ้น GitHub แล้ว |
 | Smart Enhancements A | เสร็จแล้ว | dashboard actionable, next-number preview, smart defaults, report insights, quick filters |
 | Documentation sync | เสร็จแล้ว | รวมถึง `SEED_DATA.md`/`ALL_DOCS.md` ที่ sync `statuses.semantic_key` แล้ว |
-| Local verification | เสร็จแล้ว | `npm run lint`, `npm run build`, local login ที่ `127.0.0.1:3001` ผ่านถึง dashboard และไม่มี console/500 error |
-| Trial deployment runtime | ยังเหลือเฉพาะนอก repo | ต้องตั้ง env บน Vercel และทดสอบ Neon/Blob/export จริง |
+| Local verification | เสร็จแล้ว | `npm run lint`, `npm run build`, local route smoke test ที่ `127.0.0.1:3001` ผ่าน dashboard, requests, reports และ Excel export |
+| Trial deployment runtime | เหลือยืนยันหลัง deploy | Vercel env หลักมีรายการที่ต้องตั้งครบแล้ว แต่ยังควรทดสอบ production URL, Neon, Blob และ export หลัง deploy ล่าสุด |
 | Smart Enhancements B | เสร็จแล้ว | duplicate hint และ location autocomplete แบบไม่ block |
+| Performance optimization | เสร็จแล้วรอบ P1/P2 | เพิ่ม database indexes, ลด dashboard query, aggregate report ด้วย SQL, ลด `GROUP BY` จาก attachment count |
 
 ภาพรวมโดยประมาณ:
 - งานพัฒนาใน repo: **100% สำหรับ MVP trial scope ปัจจุบัน**
-- งานที่เหลือเพื่อใช้งานทดลองจริง: **เป็นงาน runtime/deployment ภายนอก repo**
+- งานที่เหลือเพื่อใช้งานทดลองจริง: **เป็นงาน runtime/deployment ภายนอก repo หลัง deploy ล่าสุด**
 - งานต่อยอด smart รอบถัดไป: แยกเป็น phase ใหม่ ไม่บล็อก MVP trial
 
 หมายเหตุสถานะ:
 - checkbox ที่ยังว่างในเอกสารนี้คือการทดสอบกับ environment จริง เช่น Vercel, Neon และ Vercel Blob หรือ future requirement ที่ยังไม่อยู่ใน version 1
-- ไม่พบงาน code/docs ใน local repo ที่ค้างสำหรับ MVP trial หลัง commit `8d0123e`
+- ไม่พบงาน code/docs ใน local repo ที่ค้างสำหรับ MVP trial หลังรอบ performance optimization นี้
 
 ## [x] Slice 0: Decision Lock
 
@@ -86,6 +87,7 @@
 - [x] ปรับ `SEED_DATA.md` และ `ALL_DOCS.md` ให้ระบุ `semantic_key` ตรงกับ runtime schema
 - [x] เพิ่ม schema initialization lock เพื่อกัน cold-start race เมื่อหลาย query เรียก `ensureSchema()` พร้อมกัน
 - [x] ปิดใช้งาน seed เก่าที่เลิกใช้ เช่น `ยกเลิก`, `คดีอาชญากรรม`, `เหตุเดือดร้อนรำคาญ`
+- [x] เพิ่ม index สำหรับ query หลัก: active request date, created date, fiscal sequence, requester type, category, status, category/date และ attachment request id
 
 เหลือ:
 - [ ] ทดสอบ schema creation กับ Neon production จริง (external runtime)
@@ -190,6 +192,8 @@
 - [x] เทียบช่วงก่อนหน้า
 - [x] แนวโน้มย้อนหลัง 6 เดือน
 - [x] อัตราพบภาพจาก semantic `found` และ `not_found`
+- [x] ปรับ summary report ให้ aggregate ด้วย SQL แทนการดึง 1,000 rows มานับใน Node
+- [x] ให้ summary totals ใช้ข้อมูลครบตาม filter ส่วนตาราง detail ยังแสดงสูงสุด 1,000 รายการ
 
 เหลือ:
 - [ ] ทดสอบ Excel กับข้อมูลจำนวนมากอย่างน้อย 5,000 รายการ (load/performance test)
@@ -205,7 +209,8 @@
 - [x] ให้ Vercel สามารถ build จาก repo ได้
 - [x] local build/lint ผ่านหลัง commit ล่าสุด
 - [x] local login route ทดสอบได้ที่ port 3001
-- [ ] ตั้งค่า Vercel Environment Variables
+- [x] ระบุรายการ Vercel Environment Variables ที่ต้องตั้งครบ
+- [ ] ยืนยันค่า Vercel Environment Variables บน production หลัง deploy ล่าสุด
 - [ ] ตรวจ Vercel preview/prod URL
 - [ ] ทดสอบ shared password access gate บน Vercel
 - [ ] ทดสอบ Neon connection production
@@ -217,13 +222,13 @@
 - [ ] ทดสอบ backup
 
 Environment ที่ต้องตั้ง:
-- [ ] `DATABASE_URL`
-- [ ] `APP_PASSWORD`
-- [ ] `SESSION_SECRET`
-- [ ] `BLOB_READ_WRITE_TOKEN`
-- [ ] `REPORT_ORGANIZATION_NAME`
-- [ ] `FOLLOW_UP_DAYS` optional, default 7
-- [ ] `MAX_UPLOAD_BYTES` optional, default 4194304
+- [x] `DATABASE_URL`
+- [x] `APP_PASSWORD`
+- [x] `SESSION_SECRET`
+- [x] `BLOB_READ_WRITE_TOKEN`
+- [x] `REPORT_ORGANIZATION_NAME`
+- [x] `FOLLOW_UP_DAYS` optional, default 7
+- [x] `MAX_UPLOAD_BYTES` optional, default 4194304
 
 เกณฑ์ผ่าน:
 - [ ] URL ทดลองเข้าได้เฉพาะผู้รู้รหัสทดลอง
@@ -263,6 +268,30 @@ Environment ที่ต้องตั้ง:
 - [x] ห้ามทำให้เพิ่มคำร้องเกิน 30 วินาที
 - [x] ต้องใช้คำว่า hint/คำแนะนำ ไม่ใช่ error ถ้าเป็น duplicate ที่ไม่แน่นอน
 
+## [x] Performance Optimization P1/P2
+
+เป้าหมาย:
+- [x] เพิ่ม database indexes ที่ตรงกับ query หลักของ dashboard, list, report และ attachment lookup
+- [x] ลด `getDashboardStats()` จากหลาย query sequential เป็น summary aggregate query และดึง follow-up rows แบบ parallel
+- [x] ลดภาระ `listRequests()` โดยนับไฟล์แนบจาก pre-aggregated subquery แทน `LEFT JOIN` แล้ว `GROUP BY` ทุก request row
+- [x] ปรับ `getReport()` ให้คำนวณ total, previous total, found rate และ count by category/requester/status ด้วย SQL aggregate
+- [x] เพิ่ม lightweight timing logs สำหรับ route/function สำคัญ เช่น dashboard, requests, reports, smart APIs, Excel และ backup
+- [x] แก้ cold runtime bottleneck ของ `ensureSchema()` โดยเพิ่ม schema readiness check ก่อนรัน DDL/seed ชุดใหญ่
+- [x] ทำ DB round-trip probe ให้เปิดเฉพาะ diagnostic mode ด้วย `PERF_DB_PROBE=1` เพื่อไม่เพิ่ม query บน dashboard ปกติ
+- [x] คง business logic เดิม: request numbering, soft delete, auth, Blob privacy และ report filters
+
+หลักฐาน local:
+- [x] `npm.cmd run lint` ผ่าน
+- [x] `npm.cmd run build` ผ่าน
+- [x] local smoke test ที่ `http://127.0.0.1:3001` ผ่าน route `/`, `/requests`, `/reports`, `/api/reports/excel`
+- [x] production local ก่อนแก้: `/` รอบแรกประมาณ 2146ms, `/api/requests/next-number` รอบแรกประมาณ 1766ms เพราะ `ensureSchema()` ใช้ประมาณ 1694-1718ms ใน cold runtime
+- [x] production local หลังแก้: `/` รอบแรกประมาณ 324ms, `/api/requests/next-number` รอบแรกประมาณ 102ms และ warm refresh `/` ประมาณ 155ms
+
+เหลือ:
+- [ ] วัดผลจริงบน Neon production ด้วยข้อมูลจริงหลัง deploy ล่าสุด
+- [ ] ทำ load/performance test สำหรับ Excel/backup เมื่อข้อมูล 5,000+ รายการ
+- [ ] พิจารณา export แบบ streaming หรือแบ่งหน้า หากข้อมูลจริงเริ่มใหญ่
+
 ## [ ] Future Requirements
 
 ยังไม่ทำใน version 1:
@@ -286,13 +315,14 @@ Environment ที่ต้องตั้ง:
 4. [x] commit และ push ขึ้น GitHub แล้ว
 
 ถ้าต้องการให้ MVP ทดลองใช้จริง:
-1. [ ] ตั้ง env บน Vercel
-2. [ ] เปิด Vercel deployment URL
-3. [ ] ทดสอบ login ด้วย shared password
-4. [ ] เพิ่มคำร้องจริง 2-3 รายการ
-5. [ ] ทดสอบแนบไฟล์จริง
-6. [ ] ทดสอบรายงาน/Excel/PDF/Backup
-7. [ ] เก็บ feedback จากผู้ใช้หน้างาน
+1. [x] ตั้ง env หลักบน Vercel
+2. [ ] deploy โค้ด performance optimization ล่าสุดขึ้น Vercel
+3. [ ] เปิด Vercel deployment URL
+4. [ ] ทดสอบ login ด้วย shared password
+5. [ ] เพิ่มคำร้องจริง 2-3 รายการ
+6. [ ] ทดสอบแนบไฟล์จริง
+7. [ ] ทดสอบรายงาน/Excel/PDF/Backup
+8. [ ] เก็บ feedback จากผู้ใช้หน้างาน
 
 ถ้าต้องการต่อยอด smart:
 1. [x] ทำ duplicate hint

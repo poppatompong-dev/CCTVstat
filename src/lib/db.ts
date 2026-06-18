@@ -16,6 +16,7 @@ import type {
   RequestRow,
   SmartDefaults,
 } from "@/lib/types";
+import { timed } from "@/lib/perf";
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
 let schemaReady = false;
@@ -105,7 +106,6 @@ async function deactivateDeprecated(kind: MasterKind, names: string[]) {
 }
 
 async function initializeSchema() {
-
   for (const table of masterTables) {
     await createMasterTable(table);
   }
@@ -147,6 +147,14 @@ async function initializeSchema() {
 
   await query("ALTER TABLE statuses ADD COLUMN IF NOT EXISTS semantic_key TEXT");
   await query("CREATE UNIQUE INDEX IF NOT EXISTS statuses_semantic_key_unique ON statuses (semantic_key) WHERE semantic_key IS NOT NULL");
+  await query("CREATE INDEX IF NOT EXISTS requests_active_date_idx ON requests (request_date DESC, id DESC) WHERE deleted_at IS NULL");
+  await query("CREATE INDEX IF NOT EXISTS requests_active_created_idx ON requests (created_at DESC) WHERE deleted_at IS NULL");
+  await query("CREATE INDEX IF NOT EXISTS requests_fiscal_sequence_idx ON requests (fiscal_year, sequence_no DESC)");
+  await query("CREATE INDEX IF NOT EXISTS requests_active_requester_type_idx ON requests (requester_type_id) WHERE deleted_at IS NULL");
+  await query("CREATE INDEX IF NOT EXISTS requests_active_category_idx ON requests (category_id) WHERE deleted_at IS NULL");
+  await query("CREATE INDEX IF NOT EXISTS requests_active_status_idx ON requests (status_id) WHERE deleted_at IS NULL");
+  await query("CREATE INDEX IF NOT EXISTS requests_active_category_date_idx ON requests (category_id, request_date DESC) WHERE deleted_at IS NULL");
+  await query("CREATE INDEX IF NOT EXISTS request_attachments_request_id_idx ON request_attachments (request_id)");
 
   await seedMaster("requester_types", [
     { name: "ประชาชน", sortOrder: 1 },
@@ -187,27 +195,78 @@ async function initializeSchema() {
   schemaReady = true;
 }
 
+async function schemaLooksInitialized() {
+  const rows = await query<{ ready: boolean }>(`
+    SELECT (
+      to_regclass('public.requester_types') IS NOT NULL
+      AND to_regclass('public.categories') IS NOT NULL
+      AND to_regclass('public.statuses') IS NOT NULL
+      AND to_regclass('public.evidence_types') IS NOT NULL
+      AND to_regclass('public.requests') IS NOT NULL
+      AND to_regclass('public.request_attachments') IS NOT NULL
+      AND EXISTS (
+        SELECT 1
+        FROM information_schema.columns
+        WHERE table_schema = 'public'
+          AND table_name = 'statuses'
+          AND column_name = 'semantic_key'
+      )
+      AND to_regclass('public.statuses_semantic_key_unique') IS NOT NULL
+      AND to_regclass('public.requests_active_date_idx') IS NOT NULL
+      AND to_regclass('public.requests_active_created_idx') IS NOT NULL
+      AND to_regclass('public.requests_fiscal_sequence_idx') IS NOT NULL
+      AND to_regclass('public.requests_active_requester_type_idx') IS NOT NULL
+      AND to_regclass('public.requests_active_category_idx') IS NOT NULL
+      AND to_regclass('public.requests_active_status_idx') IS NOT NULL
+      AND to_regclass('public.requests_active_category_date_idx') IS NOT NULL
+      AND to_regclass('public.request_attachments_request_id_idx') IS NOT NULL
+    ) AS ready
+  `);
+  return Boolean(rows[0]?.ready);
+}
+
+async function initializeSchemaIfNeeded() {
+  if (await timed("schema readiness check", () => schemaLooksInitialized())) {
+    schemaReady = true;
+    return;
+  }
+
+  await initializeSchema();
+}
+
 export async function ensureSchema() {
-  if (schemaReady) return;
+  return timed("ensureSchema", async () => {
+    if (schemaReady) return;
 
-  schemaReadyPromise ??= initializeSchema().catch((error) => {
-    schemaReadyPromise = null;
-    throw error;
+    schemaReadyPromise ??= initializeSchemaIfNeeded().catch((error) => {
+      schemaReadyPromise = null;
+      throw error;
+    });
+
+    await schemaReadyPromise;
   });
+}
 
-  await schemaReadyPromise;
+export async function measureDatabaseLatency(label: string) {
+  if (process.env.PERF_DB_PROBE !== "1") return;
+  await timed(`${label} db SELECT 1`, () => query("SELECT 1"));
+  await timed(`${label} db active request count`, () =>
+    query("SELECT COUNT(*)::int AS total FROM requests WHERE deleted_at IS NULL"),
+  );
 }
 
 export async function getMasters() {
-  await ensureSchema();
-  const [requesterTypes, categories, statuses, evidenceTypes] =
+  return timed("getMasters", async () => {
+    await ensureSchema();
+    const [requesterTypes, categories, statuses, evidenceTypes] =
     await Promise.all([
       getMasterRows("requester_types"),
       getMasterRows("categories"),
       getMasterRows("statuses"),
       getMasterRows("evidence_types"),
     ]);
-  return { requesterTypes, categories, statuses, evidenceTypes };
+    return { requesterTypes, categories, statuses, evidenceTypes };
+  });
 }
 
 export async function getMasterRows(kind: MasterKind, activeOnly = false) {
@@ -315,37 +374,43 @@ const requestSelect = `
     c.name AS category_name,
     s.name AS status_name,
     s.semantic_key AS status_semantic_key,
-    COUNT(a.id)::int AS attachment_count
+    COALESCE(ac.attachment_count, 0)::int AS attachment_count
   FROM requests r
   JOIN requester_types rt ON rt.id = r.requester_type_id
   JOIN categories c ON c.id = r.category_id
   JOIN statuses s ON s.id = r.status_id
-  LEFT JOIN request_attachments a ON a.request_id = r.id
+  LEFT JOIN (
+    SELECT request_id, COUNT(*)::int AS attachment_count
+    FROM request_attachments
+    GROUP BY request_id
+  ) ac ON ac.request_id = r.id
 `;
 
 export async function listRequests(filters: RequestFilters = {}, limit = 80) {
-  await ensureSchema();
-  const { where, params, nextIndex } = filtersToWhere(filters);
-  return query<RequestRow>(
-    `${requestSelect}
-     WHERE ${where}
-     GROUP BY r.id, rt.name, c.name, s.name, s.semantic_key
-     ORDER BY r.request_date DESC, r.id DESC
-     LIMIT $${nextIndex}`,
-    [...params, limit],
-  );
+  return timed(`listRequests limit ${limit}`, async () => {
+    await ensureSchema();
+    const { where, params, nextIndex } = filtersToWhere(filters);
+    return query<RequestRow>(
+      `${requestSelect}
+       WHERE ${where}
+       ORDER BY r.request_date DESC, r.id DESC
+       LIMIT $${nextIndex}`,
+      [...params, limit],
+    );
+  });
 }
 
 export async function getRequest(id: number) {
-  await ensureSchema();
-  const rows = await query<RequestRow>(
-    `${requestSelect}
-     WHERE r.deleted_at IS NULL AND r.id = $1
-     GROUP BY r.id, rt.name, c.name, s.name, s.semantic_key
-     LIMIT 1`,
-    [id],
-  );
-  return rows[0] ?? null;
+  return timed("getRequest", async () => {
+    await ensureSchema();
+    const rows = await query<RequestRow>(
+      `${requestSelect}
+       WHERE r.deleted_at IS NULL AND r.id = $1
+       LIMIT 1`,
+      [id],
+    );
+    return rows[0] ?? null;
+  });
 }
 
 export async function getAttachments(requestId: number) {
@@ -379,63 +444,63 @@ export async function getAttachment(id: number) {
 
 export async function getDashboardStats(): Promise<DashboardStats> {
   await ensureSchema();
-  const [{ total }] = await query<{ total: number }>(
-    "SELECT COUNT(*)::int AS total FROM requests WHERE deleted_at IS NULL",
-  );
-  const [{ this_month }] = await query<{ this_month: number }>(
-    `SELECT COUNT(*)::int AS this_month
-     FROM requests
-     WHERE deleted_at IS NULL
-       AND request_date >= DATE_TRUNC('month', CURRENT_DATE)`,
-  );
-  const [{ with_attachments }] = await query<{ with_attachments: number }>(
-    `SELECT COUNT(DISTINCT r.id)::int AS with_attachments
-     FROM requests r
-     JOIN request_attachments a ON a.request_id = r.id
-     WHERE r.deleted_at IS NULL`,
-  );
-  const latest = await query<{ request_no: string }>(
-    `SELECT request_no
-     FROM requests
-     WHERE deleted_at IS NULL
-     ORDER BY created_at DESC
-     LIMIT 1`,
-  );
   const days = followUpDays();
-  const [{ follow_up_total }] = await query<{ follow_up_total: number }>(
-    `SELECT COUNT(*)::int AS follow_up_total
-     FROM requests r
-     JOIN statuses s ON s.id = r.status_id
-     WHERE r.deleted_at IS NULL
-       AND COALESCE(s.semantic_key, '') <> 'notified'
-       AND r.request_date <= CURRENT_DATE - ($1::int * INTERVAL '1 day')`,
-    [days],
-  );
-  const [{ overdue_checking }] = await query<{ overdue_checking: number }>(
-    `SELECT COUNT(*)::int AS overdue_checking
-     FROM requests r
-     JOIN statuses s ON s.id = r.status_id
-     WHERE r.deleted_at IS NULL
-       AND s.semantic_key = 'checking'
-       AND r.request_date <= CURRENT_DATE - ($1::int * INTERVAL '1 day')`,
-    [days],
-  );
-  const [{ unresolved_total }] = await query<{ unresolved_total: number }>(
-    `SELECT COUNT(*)::int AS unresolved_total
-     FROM requests r
-     JOIN statuses s ON s.id = r.status_id
-     WHERE r.deleted_at IS NULL
-       AND COALESCE(s.semantic_key, '') <> 'notified'`,
-  );
-  const followUpRows = await listRequests({ view: "follow-up" }, 5);
+  const [summary, followUpRows] = await Promise.all([
+    timed("getDashboardStats summary query", () => query<{
+      total: number;
+      this_month: number;
+      with_attachments: number;
+      latest_request_no: string | null;
+      follow_up_total: number;
+      overdue_checking: number;
+      unresolved_total: number;
+    }>(
+      `WITH active_requests AS (
+        SELECT r.id, r.request_date, r.created_at, r.request_no, s.semantic_key,
+          EXISTS (
+            SELECT 1 FROM request_attachments a WHERE a.request_id = r.id
+          ) AS has_attachment
+        FROM requests r
+        JOIN statuses s ON s.id = r.status_id
+        WHERE r.deleted_at IS NULL
+      )
+      SELECT
+        COUNT(*)::int AS total,
+        COUNT(*) FILTER (
+          WHERE request_date >= DATE_TRUNC('month', CURRENT_DATE)
+        )::int AS this_month,
+        COUNT(*) FILTER (WHERE has_attachment)::int AS with_attachments,
+        (
+          SELECT request_no
+          FROM active_requests
+          ORDER BY created_at DESC
+          LIMIT 1
+        ) AS latest_request_no,
+        COUNT(*) FILTER (
+          WHERE COALESCE(semantic_key, '') <> 'notified'
+            AND request_date <= CURRENT_DATE - ($1::int * INTERVAL '1 day')
+        )::int AS follow_up_total,
+        COUNT(*) FILTER (
+          WHERE semantic_key = 'checking'
+            AND request_date <= CURRENT_DATE - ($1::int * INTERVAL '1 day')
+        )::int AS overdue_checking,
+        COUNT(*) FILTER (
+          WHERE COALESCE(semantic_key, '') <> 'notified'
+        )::int AS unresolved_total
+      FROM active_requests`,
+      [days],
+    )),
+    timed("getDashboardStats follow-up rows", () => listRequests({ view: "follow-up" }, 5)),
+  ]);
+  const metrics = summary[0];
   return {
-    total,
-    thisMonth: this_month,
-    withAttachments: with_attachments,
-    latestRequestNo: latest[0]?.request_no ?? null,
-    followUpTotal: follow_up_total,
-    overdueChecking: overdue_checking,
-    unresolvedTotal: unresolved_total,
+    total: metrics.total,
+    thisMonth: metrics.this_month,
+    withAttachments: metrics.with_attachments,
+    latestRequestNo: metrics.latest_request_no,
+    followUpTotal: metrics.follow_up_total,
+    overdueChecking: metrics.overdue_checking,
+    unresolvedTotal: metrics.unresolved_total,
     followUpDays: days,
     followUpRows,
   };
@@ -537,7 +602,6 @@ export async function findDuplicateHints(input: {
        AND r.request_date = $1
        AND r.category_id = $2
        AND r.location_text ILIKE $3
-     GROUP BY r.id, rt.name, c.name, s.name, s.semantic_key
      ORDER BY r.created_at DESC
      LIMIT 3`,
     [input.requestDate, input.categoryId, `%${location}%`],
@@ -669,24 +733,78 @@ export async function deleteAttachmentRecord(id: number) {
   await query("DELETE FROM request_attachments WHERE id = $1", [id]);
 }
 
-export async function getReport(filters: RequestFilters): Promise<ReportData> {
-  const rows = await listRequests(filters, 1000);
-  const previousFilters = previousPeriodFilters(filters);
-  const previousRows = previousFilters ? await listRequests(previousFilters, 1000) : [];
-  const countBy = (key: keyof RequestRow) => {
-    const map = new Map<string, number>();
-    for (const row of rows) {
-      const name = String(row[key]);
-      map.set(name, (map.get(name) ?? 0) + 1);
-    }
-    return Array.from(map, ([name, count]) => ({ name, count })).sort(
-      (a, b) => b.count - a.count || a.name.localeCompare(b.name, "th"),
-    );
-  };
-  const found = rows.filter((row) => row.status_semantic_key === "found").length;
-  const notFound = rows.filter((row) => row.status_semantic_key === "not_found").length;
-  const denominator = found + notFound;
-  const trendRows = await query<{ month: string; count: number }>(
+type CountRow = { name: string; count: number };
+
+async function countRequests(filters: RequestFilters) {
+  const { where, params } = filtersToWhere(filters);
+  const [{ total }] = await query<{ total: number }>(
+    `SELECT COUNT(*)::int AS total
+     FROM requests r
+     JOIN statuses s ON s.id = r.status_id
+     WHERE ${where}`,
+    params,
+  );
+  return total;
+}
+
+async function countByRequesterType(filters: RequestFilters) {
+  const { where, params } = filtersToWhere(filters);
+  return query<CountRow>(
+    `SELECT rt.name, COUNT(*)::int AS count
+     FROM requests r
+     JOIN requester_types rt ON rt.id = r.requester_type_id
+     JOIN statuses s ON s.id = r.status_id
+     WHERE ${where}
+     GROUP BY rt.name
+     ORDER BY count DESC, rt.name`,
+    params,
+  );
+}
+
+async function countByCategory(filters: RequestFilters) {
+  const { where, params } = filtersToWhere(filters);
+  return query<CountRow>(
+    `SELECT c.name, COUNT(*)::int AS count
+     FROM requests r
+     JOIN categories c ON c.id = r.category_id
+     JOIN statuses s ON s.id = r.status_id
+     WHERE ${where}
+     GROUP BY c.name
+     ORDER BY count DESC, c.name`,
+    params,
+  );
+}
+
+async function countByStatus(filters: RequestFilters) {
+  const { where, params } = filtersToWhere(filters);
+  return query<CountRow>(
+    `SELECT s.name, COUNT(*)::int AS count
+     FROM requests r
+     JOIN statuses s ON s.id = r.status_id
+     WHERE ${where}
+     GROUP BY s.name
+     ORDER BY count DESC, s.name`,
+    params,
+  );
+}
+
+async function foundRate(filters: RequestFilters) {
+  const { where, params } = filtersToWhere(filters);
+  const [{ found, not_found }] = await query<{ found: number; not_found: number }>(
+    `SELECT
+       COUNT(*) FILTER (WHERE s.semantic_key = 'found')::int AS found,
+       COUNT(*) FILTER (WHERE s.semantic_key = 'not_found')::int AS not_found
+     FROM requests r
+     JOIN statuses s ON s.id = r.status_id
+     WHERE ${where}`,
+    params,
+  );
+  const denominator = found + not_found;
+  return denominator ? (found / denominator) * 100 : null;
+}
+
+async function monthlyTrend() {
+  return query<{ month: string; count: number }>(
     `SELECT TO_CHAR(DATE_TRUNC('month', request_date), 'YYYY-MM') AS month,
       COUNT(*)::int AS count
      FROM requests
@@ -695,20 +813,48 @@ export async function getReport(filters: RequestFilters): Promise<ReportData> {
      GROUP BY 1
      ORDER BY 1`,
   );
+}
 
-  return {
-    total: rows.length,
-    previousTotal: previousRows.length,
-    changePercent: previousRows.length
-      ? ((rows.length - previousRows.length) / previousRows.length) * 100
-      : null,
-    foundRate: denominator ? (found / denominator) * 100 : null,
-    byCategory: countBy("category_name"),
-    byRequesterType: countBy("requester_type_name"),
-    byStatus: countBy("status_name"),
-    monthlyTrend: trendRows,
-    rows,
-  };
+export async function getReport(filters: RequestFilters): Promise<ReportData> {
+  return timed("getReport total", async () => {
+    await ensureSchema();
+    const previousFilters = previousPeriodFilters(filters);
+    const [
+      rows,
+      total,
+      previousTotal,
+      rate,
+      byCategory,
+      byRequesterType,
+      byStatus,
+      trendRows,
+    ] = await Promise.all([
+      timed("getReport detail rows", () => listRequests(filters, 1000)),
+      timed("getReport current total", () => countRequests(filters)),
+      previousFilters
+        ? timed("getReport previous total", () => countRequests(previousFilters))
+        : Promise.resolve(0),
+      timed("getReport found rate", () => foundRate(filters)),
+      timed("getReport by category", () => countByCategory(filters)),
+      timed("getReport by requester type", () => countByRequesterType(filters)),
+      timed("getReport by status", () => countByStatus(filters)),
+      timed("getReport monthly trend", () => monthlyTrend()),
+    ]);
+
+    return {
+      total,
+      previousTotal,
+      changePercent: previousTotal
+        ? ((total - previousTotal) / previousTotal) * 100
+        : null,
+      foundRate: rate,
+      byCategory,
+      byRequesterType,
+      byStatus,
+      monthlyTrend: trendRows,
+      rows,
+    };
+  });
 }
 
 function previousPeriodFilters(filters: RequestFilters): RequestFilters | null {

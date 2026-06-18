@@ -9,17 +9,21 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth";
-import { getDashboardStats, listRequests } from "@/lib/db";
+import { getDashboardStats, listRequests, measureDatabaseLatency } from "@/lib/db";
 import { formatNumber } from "@/lib/format";
+import { perfLog, perfStart, timed } from "@/lib/perf";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { RequestList } from "@/components/RequestList";
 
 export default async function HomePage() {
-  await requireAuth();
+  const routeStart = perfStart();
+  try {
+  await timed("/ dashboard requireAuth", () => requireAuth());
+  await measureDatabaseLatency("/ dashboard");
   const [stats, latest] = await Promise.all([
-    getDashboardStats(),
-    listRequests({}, 8),
+    timed("/ dashboard getDashboardStats", () => getDashboardStats()),
+    timed("/ dashboard listRequests", () => listRequests({}, 8)),
   ]);
 
   return (
@@ -115,4 +119,7 @@ export default async function HomePage() {
       </section>
     </AppShell>
   );
+  } finally {
+    perfLog("/ dashboard total", routeStart);
+  }
 }

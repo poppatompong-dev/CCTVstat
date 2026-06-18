@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth";
 import { defaultReportRange } from "@/lib/dates";
 import { getMasters, getReport } from "@/lib/db";
 import { formatNumber } from "@/lib/format";
+import { perfLog, perfStart, timed } from "@/lib/perf";
 import type { RequestFilters } from "@/lib/types";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
@@ -65,10 +66,15 @@ function TrendChart({ data }: { data: Array<{ month: string; count: number }> })
 }
 
 export default async function ReportsPage({ searchParams }: { searchParams: SearchParams }) {
-  await requireAuth();
-  const params = await searchParams;
+  const routeStart = perfStart();
+  try {
+  await timed("/reports requireAuth", () => requireAuth());
+  const params = await timed("/reports searchParams", () => searchParams);
   const filters = readFilters(params);
-  const [masters, report] = await Promise.all([getMasters(), getReport(filters)]);
+  const [masters, report] = await Promise.all([
+    timed("/reports getMasters", () => getMasters()),
+    timed("/reports getReport", () => getReport(filters)),
+  ]);
   const query = qs(filters);
 
   return (
@@ -174,4 +180,7 @@ export default async function ReportsPage({ searchParams }: { searchParams: Sear
       </section>
     </AppShell>
   );
+  } finally {
+    perfLog("/reports total", routeStart);
+  }
 }

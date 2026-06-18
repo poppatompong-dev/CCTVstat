@@ -2,6 +2,7 @@ import { FilePlus2 } from "lucide-react";
 import Link from "next/link";
 import { requireAuth } from "@/lib/auth";
 import { getMasters, listRequests } from "@/lib/db";
+import { perfLog, perfStart, timed } from "@/lib/perf";
 import type { RequestFilters } from "@/lib/types";
 import { AppShell } from "@/components/AppShell";
 import { Feedback } from "@/components/Feedback";
@@ -24,10 +25,15 @@ function readParams(params: Record<string, string | string[] | undefined>): Requ
 }
 
 export default async function RequestsPage({ searchParams }: { searchParams: SearchParams }) {
-  await requireAuth();
-  const params = await searchParams;
+  const routeStart = perfStart();
+  try {
+  await timed("/requests requireAuth", () => requireAuth());
+  const params = await timed("/requests searchParams", () => searchParams);
   const filters = readParams(params);
-  const [masters, rows] = await Promise.all([getMasters(), listRequests(filters)]);
+  const [masters, rows] = await Promise.all([
+    timed("/requests getMasters", () => getMasters()),
+    timed("/requests listRequests", () => listRequests(filters)),
+  ]);
 
   return (
     <AppShell>
@@ -104,4 +110,7 @@ export default async function RequestsPage({ searchParams }: { searchParams: Sea
       <RequestList rows={rows} />
     </AppShell>
   );
+  } finally {
+    perfLog("/requests total", routeStart);
+  }
 }

@@ -53,3 +53,22 @@
 - ปรับ seed data ให้ตรงกับ `SEED_DATA.md`
 - เพิ่ม semantic key ให้สถานะ เพื่อให้ smart query ไม่ผูกกับชื่อสถานะภาษาไทยโดยตรง
 - เพิ่ม `MAX_UPLOAD_BYTES` สำหรับควบคุมขนาดไฟล์แนบ
+
+## 1.2.0 - Performance Optimization
+### Added
+- เพิ่ม database indexes สำหรับ query หลักของ request list, dashboard, report, fiscal sequence และ attachment lookup
+- เพิ่ม lightweight performance timing log สำหรับ route/function สำคัญ
+- เพิ่ม schema readiness check เพื่อลด cold runtime cost จาก `ensureSchema()`
+
+### Changed
+- ปรับ dashboard summary ให้รวม metric หลักด้วย SQL aggregate และดึง follow-up rows แบบ parallel
+- ปรับ request list ให้ใช้ attachment count จาก pre-aggregated subquery ลด `GROUP BY` บนทุกแถวคำร้อง
+- ปรับ report summary ให้ aggregate ด้วย SQL แทนการดึง 1,000 rows มานับใน Node
+- ให้ report summary totals ใช้ข้อมูลครบตาม filter ส่วนตาราง detail ยังจำกัดสูงสุด 1,000 รายการเพื่อคุม payload
+- เปลี่ยน DB round-trip probe ให้ทำงานเฉพาะเมื่อกำหนด `PERF_DB_PROBE=1`
+
+### Verified
+- `npm.cmd run lint` ผ่าน
+- `npm.cmd run build` ผ่าน
+- local smoke test ผ่าน `/`, `/requests`, `/reports`, `/api/reports/excel`
+- production local รอบแรกหลังแก้ `/` ลดจากประมาณ 2146ms เหลือ 324ms และ `/api/requests/next-number` ลดจากประมาณ 1766ms เหลือ 102ms
