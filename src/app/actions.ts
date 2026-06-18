@@ -30,6 +30,19 @@ function message(path: string, text: string, type: "ok" | "error" = "ok"): never
   redirect(`${path}?${type}=${encodeURIComponent(text)}`);
 }
 
+function masterSettingsPath(kind: MasterKind) {
+  switch (kind) {
+    case "requester_types":
+      return "/settings/requester-types";
+    case "categories":
+      return "/settings/categories";
+    case "statuses":
+      return "/settings/statuses";
+    case "evidence_types":
+      return "/settings/evidence-types";
+  }
+}
+
 export async function loginAction(formData: FormData) {
   const password = String(formData.get("password") || "");
   const result = verifyPassword(password);
@@ -98,14 +111,14 @@ export async function deleteRequestAction(id: number) {
 
 export async function saveMasterAction(kind: MasterKind, formData: FormData) {
   await requireAuth();
+  const path = masterSettingsPath(kind);
+
   try {
     await upsertMaster(kind, formData);
   } catch {
-    const path = kind === "categories" ? "/settings/categories" : "/settings/evidence-types";
     message(path, "บันทึกไม่สำเร็จ กรุณาตรวจสอบชื่อซ้ำหรือข้อมูลที่กรอก", "error");
   }
 
-  const path = kind === "categories" ? "/settings/categories" : "/settings/evidence-types";
   revalidatePath(path);
   message(path, "บันทึกสำเร็จ");
 }

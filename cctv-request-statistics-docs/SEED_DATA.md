@@ -45,23 +45,23 @@ INSERT INTO categories (name, sort_order, is_active) VALUES
 ```
 
 ## สถานะ
-| sort_order | name | is_active |
-|---:|---|---|
-| 1 | รับคำร้องแล้ว | true |
-| 2 | กำลังตรวจสอบภาพ | true |
-| 3 | พบภาพ | true |
-| 4 | ไม่พบภาพ | true |
-| 5 | แจ้งผลแล้ว | true |
-| 6 | อื่น ๆ | true |
+| sort_order | name | semantic_key | is_active |
+|---:|---|---|---|
+| 1 | รับคำร้องแล้ว | received | true |
+| 2 | กำลังตรวจสอบภาพ | checking | true |
+| 3 | พบภาพ | found | true |
+| 4 | ไม่พบภาพ | not_found | true |
+| 5 | แจ้งผลแล้ว | notified | true |
+| 6 | อื่น ๆ | other | true |
 
 ```sql
-INSERT INTO statuses (name, sort_order, is_active) VALUES
-('รับคำร้องแล้ว', 1, 1),
-('กำลังตรวจสอบภาพ', 2, 1),
-('พบภาพ', 3, 1),
-('ไม่พบภาพ', 4, 1),
-('แจ้งผลแล้ว', 5, 1),
-('อื่น ๆ', 6, 1);
+INSERT INTO statuses (name, sort_order, semantic_key, is_active) VALUES
+('รับคำร้องแล้ว', 1, 'received', 1),
+('กำลังตรวจสอบภาพ', 2, 'checking', 1),
+('พบภาพ', 3, 'found', 1),
+('ไม่พบภาพ', 4, 'not_found', 1),
+('แจ้งผลแล้ว', 5, 'notified', 1),
+('อื่น ๆ', 6, 'other', 1);
 ```
 
 ## ประเภทหลักฐาน
