@@ -1649,6 +1649,11 @@ body {
   color: oklch(1 0 0 / 0.70);
 }
 
+.main-rail .btn.ghost,
+.login-page .btn.ghost {
+  color: var(--muted);
+}
+
 .nav-item:hover,
 .bottom-nav a:hover {
   background: oklch(1 0 0 / 0.11);
