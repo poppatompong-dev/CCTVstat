@@ -9,16 +9,21 @@
 | หมวด | สถานะ | หมายเหตุ |
 |---|---|---|
 | Product decisions | เสร็จแล้ว | scope, stack, access gate, soft delete, backfill validation ตกลงแล้ว |
-| MVP application code | เสร็จแล้ว | build/lint ผ่าน และ push ขึ้น GitHub แล้ว |
+| MVP application code | เสร็จแล้ว | build/lint ผ่าน แก้ master settings redirect แล้ว และ push ขึ้น GitHub แล้ว |
 | Smart Enhancements A | เสร็จแล้ว | dashboard actionable, next-number preview, smart defaults, report insights, quick filters |
-| Documentation sync | เสร็จแล้ว | glossary, roadmap, UI/report/API/data/test/acceptance sync แล้ว |
-| Trial deployment runtime | ยังเหลือ | ต้องตั้ง env บน Vercel และทดสอบ Neon/Blob/export จริง |
+| Documentation sync | เสร็จแล้ว | รวมถึง `SEED_DATA.md`/`ALL_DOCS.md` ที่ sync `statuses.semantic_key` แล้ว |
+| Local verification | เสร็จแล้ว | `npm run lint`, `npm run build`, local `/login` ที่ port 3001 และ redirect `/` ไป `/login` ผ่าน |
+| Trial deployment runtime | ยังเหลือเฉพาะนอก repo | ต้องตั้ง env บน Vercel และทดสอบ Neon/Blob/export จริง |
 | Smart Enhancements B | เสร็จแล้ว | duplicate hint และ location autocomplete แบบไม่ block |
 
 ภาพรวมโดยประมาณ:
-- งานพัฒนาใน repo: **ประมาณ 92-95% เสร็จ**
-- งานที่เหลือเพื่อใช้งานทดลองจริง: **ประมาณ 5-8%**
+- งานพัฒนาใน repo: **100% สำหรับ MVP trial scope ปัจจุบัน**
+- งานที่เหลือเพื่อใช้งานทดลองจริง: **เป็นงาน runtime/deployment ภายนอก repo**
 - งานต่อยอด smart รอบถัดไป: แยกเป็น phase ใหม่ ไม่บล็อก MVP trial
+
+หมายเหตุสถานะ:
+- checkbox ที่ยังว่างในเอกสารนี้คือการทดสอบกับ environment จริง เช่น Vercel, Neon และ Vercel Blob หรือ future requirement ที่ยังไม่อยู่ใน version 1
+- ไม่พบงาน code/docs ใน local repo ที่ค้างสำหรับ MVP trial หลัง commit `8d0123e`
 
 ## [x] Slice 0: Decision Lock
 
@@ -56,9 +61,11 @@
 - [x] `npm run build` ผ่าน
 - [x] `npm run lint` ผ่าน
 - [x] push ขึ้น GitHub แล้ว
+- [x] local dev server เปิดที่ `http://127.0.0.1:3001/login` และหน้า login ตอบ `200 OK`
+- [x] หน้า `/` redirect ไป `/login` เมื่อยังไม่มี session
 
 เหลือ:
-- [ ] ตรวจบน Vercel preview หลัง env พร้อม
+- [ ] ตรวจบน Vercel preview หลัง env พร้อม (external runtime)
 
 ## [x] Slice 2: Database Foundation
 
@@ -74,11 +81,12 @@
 - [x] เพิ่ม unique constraint สำหรับ `(fiscal_year, sequence_no)`
 - [x] เพิ่ม `statuses.semantic_key` สำหรับ logic smart ที่ไม่ผูกกับชื่อภาษาไทย
 - [x] ปรับ seed data ให้ตรง `SEED_DATA.md`
+- [x] ปรับ `SEED_DATA.md` และ `ALL_DOCS.md` ให้ระบุ `semantic_key` ตรงกับ runtime schema
 - [x] ปิดใช้งาน seed เก่าที่เลิกใช้ เช่น `ยกเลิก`, `คดีอาชญากรรม`, `เหตุเดือดร้อนรำคาญ`
 
 เหลือ:
-- [ ] ทดสอบ schema creation กับ Neon production จริง
-- [ ] ยืนยันว่าข้อมูลเดิมใน Neon ถ้ามี ไม่ถูกกระทบจาก reseed
+- [ ] ทดสอบ schema creation กับ Neon production จริง (external runtime)
+- [ ] ยืนยันว่าข้อมูลเดิมใน Neon ถ้ามี ไม่ถูกกระทบจาก reseed (external runtime/data)
 
 ## [x] Slice 3: Add Request Flow
 
@@ -102,8 +110,8 @@
 - [x] เลขคำร้องจริงยืนยันเมื่อบันทึก ไม่ถือว่า preview เป็นเลขจอง
 
 เหลือ:
-- [ ] ทดสอบเพิ่มคำร้องจริงบน Vercel + Neon
-- [ ] จับเวลาหน้างานจริงว่าไม่แนบไฟล์ใช้ไม่เกิน 30 วินาที
+- [ ] ทดสอบเพิ่มคำร้องจริงบน Vercel + Neon (external runtime)
+- [ ] จับเวลาหน้างานจริงว่าไม่แนบไฟล์ใช้ไม่เกิน 30 วินาที (field/user test)
 
 ## [x] Slice 4: Search, Edit, and Delete Policy
 
@@ -138,6 +146,7 @@
 เหลือ:
 - [x] เพิ่มหน้าจัดการ requester types และ statuses
 - [x] แสดง `semantic_key` เป็น chip อ่านอย่างเดียว ไม่เปิดให้แก้จาก UI ระหว่างทดสอบ
+- [x] แก้ redirect หลังบันทึก requester types/statuses ให้กลับหน้าจัดการที่ถูกต้อง
 
 ## [x] Slice 6: Attachments
 
@@ -159,7 +168,7 @@
 - [x] `.docx`
 
 เหลือ:
-- [ ] ทดสอบ upload/download/delete กับ Vercel Blob token จริง
+- [ ] ทดสอบ upload/download/delete กับ Vercel Blob token จริง (external runtime)
 - [x] เพิ่มขนาดไฟล์สูงสุดที่ชัดเจนใน env/spec/runtime
 - [x] เพิ่ม confirmation dialog ฝั่ง client ก่อนลบไฟล์แนบ
 
@@ -180,17 +189,19 @@
 - [x] อัตราพบภาพจาก semantic `found` และ `not_found`
 
 เหลือ:
-- [ ] ทดสอบ Excel กับข้อมูลจำนวนมากอย่างน้อย 5,000 รายการ
+- [ ] ทดสอบ Excel กับข้อมูลจำนวนมากอย่างน้อย 5,000 รายการ (load/performance test)
 - [x] ตัดสินใจคง print-to-PDF สำหรับ MVP เพื่อให้ภาษาไทย render จาก browser ได้แน่นอน
 - [x] เพิ่มพื้นที่ลงชื่อใน print/PDF view ให้ตรงแบบรายงานราชการมากขึ้น
 - [x] เปลี่ยน Backup เป็น Excel หลาย sheet ตาม spec
 
-## [ ] Slice 8: Trial Deployment Runtime
+## [ ] Slice 8: Trial Deployment Runtime (เหลือเฉพาะ external runtime)
 
 เป้าหมาย:
 - [x] สร้าง GitHub repository
 - [x] push source code ไป GitHub repo
 - [x] ให้ Vercel สามารถ build จาก repo ได้
+- [x] local build/lint ผ่านหลัง commit ล่าสุด
+- [x] local login route ทดสอบได้ที่ port 3001
 - [ ] ตั้งค่า Vercel Environment Variables
 - [ ] ตรวจ Vercel preview/prod URL
 - [ ] ทดสอบ shared password access gate บน Vercel
@@ -217,6 +228,10 @@ Environment ที่ต้องตั้ง:
 - [ ] เพิ่มคำร้องและออกเลขได้จริง
 - [ ] รายงานและ export ใช้งานได้จริง
 
+ข้อจำกัดปัจจุบัน:
+- ยังไม่มี `.vercel` project link ใน local workspace
+- ยังไม่ควรบันทึก secret จริงลง repo จึงต้องตั้งค่า env ใน Vercel Project Environment Variables หรือดึงผ่านเครื่องมือที่ปลอดภัยเท่านั้น
+
 ## [x] Smart Enhancements A
 
 เป้าหมาย:
@@ -230,8 +245,8 @@ Environment ที่ต้องตั้ง:
 - [x] ไม่เปลี่ยนระบบเป็น case management
 
 เหลือ:
-- [ ] ทดสอบกับข้อมูลจริงบน Vercel/Neon
-- [ ] ยืนยันว่าคำว่า **คำร้องที่ควรติดตาม** สื่อสารกับผู้ใช้จริงได้ชัด
+- [ ] ทดสอบกับข้อมูลจริงบน Vercel/Neon (external runtime)
+- [ ] ยืนยันกับผู้ใช้จริงว่าคำว่า **คำร้องที่ควรติดตาม** สื่อสารชัด (user feedback)
 
 ## [x] Smart Enhancements B
 
@@ -260,6 +275,12 @@ Environment ที่ต้องตั้ง:
 - [ ] Dashboard ผู้บริหารแยกหน้า
 
 ## Remaining Work แบบสั้นที่สุด
+
+งานใน repo:
+1. [x] โค้ด MVP trial scope เสร็จ
+2. [x] เอกสาร sync กับ implementation ล่าสุด
+3. [x] lint/build/local login smoke test ผ่าน
+4. [x] commit และ push ขึ้น GitHub แล้ว
 
 ถ้าต้องการให้ MVP ทดลองใช้จริง:
 1. [ ] ตั้ง env บน Vercel
