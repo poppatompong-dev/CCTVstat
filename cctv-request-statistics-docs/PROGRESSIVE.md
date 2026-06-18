@@ -12,7 +12,7 @@
 | MVP application code | เสร็จแล้ว | build/lint ผ่าน แก้ master settings redirect แล้ว และ push ขึ้น GitHub แล้ว |
 | Smart Enhancements A | เสร็จแล้ว | dashboard actionable, next-number preview, smart defaults, report insights, quick filters |
 | Documentation sync | เสร็จแล้ว | รวมถึง `SEED_DATA.md`/`ALL_DOCS.md` ที่ sync `statuses.semantic_key` แล้ว |
-| Local verification | เสร็จแล้ว | `npm run lint`, `npm run build`, local `/login` ที่ port 3001 และ redirect `/` ไป `/login` ผ่าน |
+| Local verification | เสร็จแล้ว | `npm run lint`, `npm run build`, local login ที่ `127.0.0.1:3001` ผ่านถึง dashboard และไม่มี console/500 error |
 | Trial deployment runtime | ยังเหลือเฉพาะนอก repo | ต้องตั้ง env บน Vercel และทดสอบ Neon/Blob/export จริง |
 | Smart Enhancements B | เสร็จแล้ว | duplicate hint และ location autocomplete แบบไม่ block |
 
@@ -56,6 +56,7 @@
 - [x] เตรียม connection ไป Neon แบบ lazy initialization
 - [x] เพิ่ม shared password access gate
 - [x] ใช้ `src/proxy.ts` สำหรับ optimistic redirect ตาม Next.js 16
+- [x] เพิ่ม `allowedDevOrigins` สำหรับ `127.0.0.1` เพื่อให้ HMR/dev resources ไม่ถูก block ตอนทดสอบ local
 
 หลักฐาน:
 - [x] `npm run build` ผ่าน
@@ -63,6 +64,7 @@
 - [x] push ขึ้น GitHub แล้ว
 - [x] local dev server เปิดที่ `http://127.0.0.1:3001/login` และหน้า login ตอบ `200 OK`
 - [x] หน้า `/` redirect ไป `/login` เมื่อยังไม่มี session
+- [x] ทดสอบ login ด้วย Chrome headless แล้วเข้า dashboard ได้ ไม่มี 500 response, console error หรือ page error
 
 เหลือ:
 - [ ] ตรวจบน Vercel preview หลัง env พร้อม (external runtime)
@@ -82,6 +84,7 @@
 - [x] เพิ่ม `statuses.semantic_key` สำหรับ logic smart ที่ไม่ผูกกับชื่อภาษาไทย
 - [x] ปรับ seed data ให้ตรง `SEED_DATA.md`
 - [x] ปรับ `SEED_DATA.md` และ `ALL_DOCS.md` ให้ระบุ `semantic_key` ตรงกับ runtime schema
+- [x] เพิ่ม schema initialization lock เพื่อกัน cold-start race เมื่อหลาย query เรียก `ensureSchema()` พร้อมกัน
 - [x] ปิดใช้งาน seed เก่าที่เลิกใช้ เช่น `ยกเลิก`, `คดีอาชญากรรม`, `เหตุเดือดร้อนรำคาญ`
 
 เหลือ:

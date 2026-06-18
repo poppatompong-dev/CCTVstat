@@ -19,6 +19,7 @@ import type {
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
 let schemaReady = false;
+let schemaReadyPromise: Promise<void> | null = null;
 
 function getSql() {
   if (!sqlClient) {
@@ -103,8 +104,7 @@ async function deactivateDeprecated(kind: MasterKind, names: string[]) {
   );
 }
 
-export async function ensureSchema() {
-  if (schemaReady) return;
+async function initializeSchema() {
 
   for (const table of masterTables) {
     await createMasterTable(table);
@@ -185,6 +185,17 @@ export async function ensureSchema() {
   await deactivateDeprecated("statuses", ["ยกเลิก"]);
 
   schemaReady = true;
+}
+
+export async function ensureSchema() {
+  if (schemaReady) return;
+
+  schemaReadyPromise ??= initializeSchema().catch((error) => {
+    schemaReadyPromise = null;
+    throw error;
+  });
+
+  await schemaReadyPromise;
 }
 
 export async function getMasters() {
