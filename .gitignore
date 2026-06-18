@@ -47,3 +47,4 @@ cctv-request-statistics-docs.zip
 next-env.d.ts
 
 .vercel
+.env*
