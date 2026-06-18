@@ -45,3 +45,5 @@ cctv-request-statistics-docs.zip
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+.vercel
