@@ -36,6 +36,7 @@
 ```text
 เปิดระบบ
 -> เลือก เพิ่มคำร้องใหม่
+-> ระบบแสดงฟอร์มหลักทันทีหลังผ่าน access gate และโหลดข้อมูลช่วยเหลือที่ไม่จำเป็นต่อการบันทึกตามมาทีหลัง
 -> ตรวจวันที่รับคำร้อง
 -> เลือกประเภทผู้ขอ
 -> เลือกหมวดหมู่
@@ -51,6 +52,7 @@
 - หลังบันทึกต้องเห็นเลขคำร้องชัดเจน
 - แก้ไขข้อมูลทั่วไปแล้วเลขคำร้องต้องไม่เปลี่ยนเอง
 - ต้องมีทางแก้เลขคำร้องอย่างตั้งใจสำหรับ correction/backfill
+- smart defaults และ location autocomplete ต้องไม่ทำให้การเปิดฟอร์มช้าลง และต้องไม่ block การบันทึก
 
 ## 4. Workflow: ออกเลขคำร้อง
 
@@ -188,6 +190,7 @@ Metadata ที่ควรเก็บ:
 
 ```text
 เปิดหน้า รายงานสถิติ
+-> ระบบแสดง shell และ loading skeleton ก่อนหาก query รายงานยังทำงานอยู่
 -> เลือกวันที่เริ่มต้นและวันที่สิ้นสุด
 -> เลือก filter เพิ่มเติมถ้าต้องการ
 -> กด แสดงรายงาน
@@ -237,6 +240,7 @@ Sheet ที่ควรมี:
 -> seed master data
 -> ทดสอบเพิ่มคำร้อง
 -> ทดสอบแนบไฟล์
+-> ถ้าเป็น automated E2E staging ให้เปิด E2E_FIXTURES_ENABLED=1 แล้วเรียก POST /api/test-fixtures/e2e หลัง login
 -> ทดสอบรายงานและ export
 ```
 
@@ -255,6 +259,7 @@ Env vars ที่คาดว่าจะต้องมี:
 - `MAX_UPLOAD_BYTES` optional
 - `MAX_UPLOAD_FILES` optional
 - `PERF_DB_PROBE` optional สำหรับ diagnostic ชั่วคราว
+- `E2E_FIXTURES_ENABLED` optional สำหรับ automated E2E staging/preview เท่านั้น
 
 ## 13. Failure Workflows
 

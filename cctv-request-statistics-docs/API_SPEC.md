@@ -90,6 +90,24 @@ Response:
 
 หมายเหตุ: ใช้เป็น hint แบบไม่ block การบันทึก
 
+### Form Assist
+```http
+GET /api/requests/form-assist
+```
+
+Response:
+```json
+{
+  "smartDefaults": {
+    "requesterTypeId": 2,
+    "statusId": 1
+  },
+  "locationSuggestions": ["หน้าตลาด", "สี่แยกเทศบาล"]
+}
+```
+
+หมายเหตุ: endpoint นี้โหลดหลังหน้าเพิ่มคำร้องแสดงแล้ว เพื่อให้ฟอร์มหลักตอบสนองก่อน ส่วน smart defaults และ location autocomplete เติมตามมาทีหลังโดยไม่ block การบันทึก
+
 ### Detail
 ```http
 GET /api/requests/{id}
@@ -170,6 +188,20 @@ GET /api/attachments/{attachment_id}/download
 ```http
 DELETE /api/attachments/{attachment_id}
 ```
+
+## 4.1 Test Fixtures
+
+ใช้เฉพาะ automated E2E บน preview/staging ที่ตั้ง `E2E_FIXTURES_ENABLED=1` และต้องผ่าน shared password access gate แล้วเท่านั้น
+
+### Reset E2E Fixture
+```http
+POST /api/test-fixtures/e2e
+```
+
+ผลลัพธ์:
+- เตรียมคำร้อง `C69-0003`
+- เตรียมไฟล์แนบ `test-private.pdf` หากยังไม่มีไฟล์แนบ
+- reset tombstone หลัง delete test เพื่อเริ่มรอบ E2E ใหม่ได้อย่างตั้งใจ
 
 ## 5. Reports
 

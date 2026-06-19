@@ -23,6 +23,7 @@
 | Insight รายงาน | เปรียบเทียบช่วงก่อนหน้า แนวโน้ม 6 เดือน และอัตราพบภาพ |
 | Duplicate hint | เตือนรายการคล้ายกันแบบไม่ block |
 | Location autocomplete | แนะนำสถานที่จากข้อมูลเดิมโดยยังพิมพ์อิสระได้ |
+| Perceived performance | หน้าเพิ่มคำร้องและรายงานต้องมี shell/loading feedback โดยไม่รอ query เสริมที่ไม่จำเป็น |
 
 ## 3. สิ่งที่ไม่ทำในระยะที่ 1
 | รายการ | เหตุผล |
@@ -106,3 +107,5 @@ Flow:
 - flow เพิ่มคำร้องบนมือถือยังต้องสั้นและไม่บังคับแนบไฟล์
 - ฟีเจอร์ smart ต้องไม่เพิ่ม required field ใหม่
 - ฟีเจอร์ smart ต้องเป็น optional/passive ไม่ block flow หลัก
+- smart defaults และ location autocomplete ต้องไม่ block การแสดงฟอร์มหลัก
+- หน้ารายงานต้องให้ feedback ระหว่างรอ query aggregate หรือ export-related data

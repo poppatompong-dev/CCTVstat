@@ -42,6 +42,10 @@ export default async function RequestDetailPage({
   ]);
 
   if (!request) notFound();
+  const requestNoError =
+    typeof feedbackParams.error === "string" && feedbackParams.error.includes("เลขคำร้อง")
+      ? feedbackParams.error
+      : null;
 
   return (
     <AppShell>
@@ -74,6 +78,7 @@ export default async function RequestDetailPage({
           masters={masters}
           request={request}
           showRequestNo
+          requestNoError={requestNoError}
           submitLabel="บันทึกการแก้ไข"
         />
       </section>

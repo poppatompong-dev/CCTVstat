@@ -5,11 +5,14 @@ import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { z } from "zod";
 import { clearAuthCookie, requireAuth, setAuthCookie, verifyPassword } from "@/lib/auth";
+import { isFixtureBlobUrl } from "@/lib/attachment-fixtures";
 import {
   createRequest,
   deleteAttachmentRecord,
+  findRequestNumberConflict,
   getAttachment,
   insertAttachment,
+  markE2EAttachmentFixtureDeleted,
   softDeleteRequest,
   updateRequest,
   upsertMaster,
@@ -89,14 +92,21 @@ export async function updateRequestAction(id: number, formData: FormData) {
   const validation = validateRequestNoForDate(requestNo, requestDate);
   if (validation) message(`/requests/${id}`, validation, "error");
 
+  const conflict = await findRequestNumberConflict(id, requestNo);
+  if (conflict) {
+    const suffix = conflict.is_deleted ? "ในรายการที่ถูกลบแล้ว" : `ในรายการ ID ${conflict.id}`;
+    message(`/requests/${id}`, `เลขคำร้อง ${conflict.request_no} ถูกใช้แล้ว${suffix} กรุณาเลือกเลขอื่น`, "error");
+  }
+
   try {
     await updateRequest(id, formData);
   } catch (error) {
     const errorMessage = error instanceof Error ? error.message : "";
+    const normalizedRequestNo = requestNo.trim().toUpperCase();
     const text = errorMessage.includes("requests_request_no_key")
-      ? "เลขคำร้องซ้ำกับรายการที่มีอยู่แล้ว"
+      ? `เลขคำร้อง ${normalizedRequestNo} ซ้ำกับรายการอื่นแล้ว กรุณาเลือกเลขอื่น`
       : errorMessage.includes("requests_fiscal_year_sequence_no_key")
-      ? "ลำดับเลขคำร้องในปีงบประมาณนี้ซ้ำกับรายการที่มีอยู่แล้ว"
+      ? `ลำดับของเลขคำร้อง ${normalizedRequestNo} ในปีงบประมาณนี้ซ้ำกับรายการอื่นแล้ว`
       : "บันทึกไม่สำเร็จ กรุณาตรวจสอบข้อมูลอีกครั้ง";
     message(`/requests/${id}`, text, "error");
   }
@@ -203,12 +213,18 @@ export async function deleteAttachmentAction(requestId: number, attachmentId: nu
   await requireAuth();
   const attachment = await getAttachment(attachmentId);
   if (attachment) {
+    const isFixtureAttachment = isFixtureBlobUrl(attachment.blob_url);
     try {
-      await del(attachment.blob_url);
+      if (!isFixtureAttachment) {
+        await del(attachment.blob_url);
+      }
     } catch {
       // If Blob deletion fails, keep the UI flowing and remove metadata.
     }
     await deleteAttachmentRecord(attachmentId);
+    if (isFixtureAttachment) {
+      await markE2EAttachmentFixtureDeleted();
+    }
   }
   revalidatePath(`/requests/${requestId}`);
   message(`/requests/${requestId}`, "ลบไฟล์แนบแล้ว");

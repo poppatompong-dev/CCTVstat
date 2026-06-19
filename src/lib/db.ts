@@ -6,6 +6,7 @@ import {
   formatRequestNo,
   parseRequestNo,
 } from "@/lib/dates";
+import { e2eFixtureBlobUrl, e2eFixturesEnabled, fixturePdfBody } from "@/lib/attachment-fixtures";
 import type {
   AttachmentRow,
   DashboardStats,
@@ -21,6 +22,8 @@ import { timed } from "@/lib/perf";
 let sqlClient: NeonQueryFunction<false, false> | null = null;
 let schemaReady = false;
 let schemaReadyPromise: Promise<void> | null = null;
+let e2eFixturesReadyPromise: Promise<void> | null = null;
+const e2eAttachmentFixtureKey = "c69-0003-attachment";
 
 function getSql() {
   if (!sqlClient) {
@@ -234,16 +237,156 @@ async function initializeSchemaIfNeeded() {
   await initializeSchema();
 }
 
+async function ensureE2EFixtureStateTable() {
+  await query(`
+    CREATE TABLE IF NOT EXISTS e2e_fixture_state (
+      fixture_key TEXT PRIMARY KEY,
+      state TEXT NOT NULL,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+}
+
+async function setE2EFixtureState(fixtureKey: string, state: string) {
+  await ensureE2EFixtureStateTable();
+  await query(
+    `INSERT INTO e2e_fixture_state (fixture_key, state)
+     VALUES ($1, $2)
+     ON CONFLICT (fixture_key)
+     DO UPDATE SET state = EXCLUDED.state, updated_at = NOW()`,
+    [fixtureKey, state],
+  );
+}
+
+async function getE2EFixtureState(fixtureKey: string) {
+  await ensureE2EFixtureStateTable();
+  const rows = await query<{ state: string }>(
+    "SELECT state FROM e2e_fixture_state WHERE fixture_key = $1 LIMIT 1",
+    [fixtureKey],
+  );
+  return rows[0]?.state ?? null;
+}
+
+async function ensureE2EFixtures(options: { reset?: boolean } = {}) {
+  if (!e2eFixturesEnabled()) return;
+
+  await timed("ensureE2EFixtures", async () => {
+    const currentState = await getE2EFixtureState(e2eAttachmentFixtureKey);
+    if (currentState === "deleted" && !options.reset) return;
+
+    const [requesterType] = await query<{ id: number }>(
+      "SELECT id FROM requester_types WHERE is_active = TRUE ORDER BY sort_order, id LIMIT 1",
+    );
+    const [category] = await query<{ id: number }>(
+      "SELECT id FROM categories WHERE is_active = TRUE ORDER BY sort_order, id LIMIT 1",
+    );
+    const [status] = await query<{ id: number }>(
+      "SELECT id FROM statuses WHERE semantic_key = 'received' OR is_active = TRUE ORDER BY CASE WHEN semantic_key = 'received' THEN 0 ELSE 1 END, sort_order, id LIMIT 1",
+    );
+    const [evidenceType] = await query<{ id: number }>(
+      "SELECT id FROM evidence_types WHERE is_active = TRUE ORDER BY sort_order, id LIMIT 1",
+    );
+
+    if (!requesterType || !category || !status || !evidenceType) {
+      console.warn("[e2e-fixtures] skipped: missing active master data");
+      return;
+    }
+
+    let [request] = await query<{ id: number }>(
+      "SELECT id FROM requests WHERE request_no = 'C69-0003' LIMIT 1",
+    );
+
+    if (!request) {
+      const conflict = await query<{ id: number; request_no: string }>(
+        "SELECT id, request_no FROM requests WHERE fiscal_year = 2569 AND sequence_no = 3 LIMIT 1",
+      );
+
+      if (conflict[0]) {
+        console.warn(`[e2e-fixtures] skipped C69-0003: sequence is already used by ${conflict[0].request_no}`);
+        return;
+      }
+
+      const inserted = await query<{ id: number }>(
+        `INSERT INTO requests (
+          request_no, request_date, fiscal_year, sequence_no, requester_type_id,
+          category_id, status_id, location_text, note
+        )
+        VALUES ('C69-0003', '2026-06-18', 2569, 3, $1, $2, $3, $4, $5)
+        RETURNING id`,
+        [
+          requesterType.id,
+          category.id,
+          status.id,
+          "E2E fixture location",
+          "สร้างโดย E2E_FIXTURES_ENABLED เพื่อทดสอบไฟล์แนบใน staging",
+        ],
+      );
+      request = inserted[0];
+    }
+
+    const existingAttachments = await query<{ id: number; blob_url: string }>(
+      "SELECT id, blob_url FROM request_attachments WHERE request_id = $1 LIMIT 1",
+      [request.id],
+    );
+
+    if (existingAttachments.length) {
+      await setE2EFixtureState(e2eAttachmentFixtureKey, "ready");
+      return;
+    }
+
+    await query(
+      `INSERT INTO request_attachments (
+        request_id, evidence_type_id, original_file_name, blob_url, download_url,
+        blob_pathname, content_type, size_bytes, note
+      )
+      VALUES ($1, $2, $3, $4, NULL, $4, $5, $6, $7)`,
+      [
+        request.id,
+        evidenceType.id,
+        "test-private.pdf",
+        e2eFixtureBlobUrl,
+        "application/pdf",
+        fixturePdfBody().length,
+        "ไฟล์ fixture สำหรับ automated E2E staging เท่านั้น",
+      ],
+    );
+    await setE2EFixtureState(e2eAttachmentFixtureKey, "ready");
+  });
+}
+
+export async function resetE2EFixtures() {
+  if (!e2eFixturesEnabled()) {
+    throw new Error("E2E fixtures are disabled");
+  }
+
+  await ensureSchema();
+  await ensureE2EFixtures({ reset: true });
+  e2eFixturesReadyPromise = Promise.resolve();
+}
+
+export async function markE2EAttachmentFixtureDeleted() {
+  if (!e2eFixturesEnabled()) return;
+  await setE2EFixtureState(e2eAttachmentFixtureKey, "deleted");
+}
+
 export async function ensureSchema() {
   return timed("ensureSchema", async () => {
-    if (schemaReady) return;
+    if (!schemaReady) {
+      schemaReadyPromise ??= initializeSchemaIfNeeded().catch((error) => {
+        schemaReadyPromise = null;
+        throw error;
+      });
 
-    schemaReadyPromise ??= initializeSchemaIfNeeded().catch((error) => {
-      schemaReadyPromise = null;
-      throw error;
-    });
+      await schemaReadyPromise;
+    }
 
-    await schemaReadyPromise;
+    if (e2eFixturesEnabled()) {
+      e2eFixturesReadyPromise ??= ensureE2EFixtures().catch((error) => {
+        e2eFixturesReadyPromise = null;
+        throw error;
+      });
+      await e2eFixturesReadyPromise;
+    }
   });
 }
 
@@ -684,6 +827,21 @@ export async function updateRequest(id: number, form: FormData) {
       id,
     ],
   );
+}
+
+export async function findRequestNumberConflict(id: number, requestNo: string) {
+  await ensureSchema();
+  const parsed = parseRequestNo(requestNo.trim().toUpperCase());
+  if (!parsed) return null;
+
+  const rows = await query<{ id: number; request_no: string; is_deleted: boolean }>(
+    `SELECT id, request_no, (deleted_at IS NOT NULL) AS is_deleted
+     FROM requests
+     WHERE request_no = $1 AND id <> $2
+     LIMIT 1`,
+    [parsed.normalized, id],
+  );
+  return rows[0] ?? null;
 }
 
 export async function softDeleteRequest(id: number) {

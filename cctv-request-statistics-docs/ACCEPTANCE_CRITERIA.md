@@ -33,6 +33,8 @@
 | 26 | อัปโหลดหลักฐานหลายไฟล์ต่อครั้งได้ | ใช่ |
 | 27 | มี thumbnail/gallery สำหรับไฟล์แนบ | ใช่ |
 | 28 | มี modal/pending state สำหรับ action สำคัญ | ใช่ |
+| 29 | หน้าเพิ่มคำร้องไม่รอ smart assist ก่อนแสดงฟอร์มหลัก | ใช่ |
+| 30 | หน้ารายงานมี loading feedback ระหว่าง query aggregate | ใช่ |
 
 ## 2. UX Criteria
 | เกณฑ์ | ค่าเป้าหมาย |
@@ -46,6 +48,8 @@
 | touch target | ปุ่มและ dropdown ต้องกดง่ายบนจอสัมผัส |
 | smart feature | ห้ามเพิ่ม required field ใหม่ |
 | smart feature | ห้ามทำให้เพิ่มคำร้องช้ากว่า 30 วินาที |
+| smart assist | ต้องโหลดแบบไม่ block ฟอร์มหลัก |
+| รายงาน | ต้องมี shell/loading feedback หาก query ยังไม่เสร็จ |
 | action feedback | ต้องมี modal/pending state ตอนบันทึก อัปโหลด หรือลบ |
 
 ## 3. Request Number Criteria

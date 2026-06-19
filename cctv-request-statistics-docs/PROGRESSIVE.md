@@ -15,7 +15,8 @@
 | Local verification | เสร็จแล้ว | `npm run lint`, `npm run build`, local route smoke test ที่ `127.0.0.1:3001` ผ่าน dashboard, requests, reports และ Excel export |
 | Trial deployment runtime | เหลือยืนยันหลัง deploy | Vercel env หลักมีรายการที่ต้องตั้งครบแล้ว แต่ยังควรทดสอบ production URL, Neon, Blob และ export หลัง deploy ล่าสุด |
 | Smart Enhancements B | เสร็จแล้ว | duplicate hint และ location autocomplete แบบไม่ block |
-| Performance optimization | เสร็จแล้วรอบ P1/P2 | เพิ่ม database indexes, ลด dashboard query, aggregate report ด้วย SQL, ลด `GROUP BY` จาก attachment count |
+| Performance optimization | เสร็จแล้วรอบ P1/P2/P3 | เพิ่ม database indexes, ลด dashboard query, aggregate report ด้วย SQL, ลด `GROUP BY` จาก attachment count และปรับ perceived performance ด้วย streaming/loading skeleton |
+| E2E staging fixtures | เสร็จแล้วในโค้ด | เพิ่ม `test-private.pdf`, `E2E_FIXTURES_ENABLED=1`, tombstone หลังลบ และ `POST /api/test-fixtures/e2e` สำหรับ reset fixture ใน staging เท่านั้น |
 
 ภาพรวมโดยประมาณ:
 - งานพัฒนาใน repo: **100% สำหรับ MVP trial scope ปัจจุบัน**
@@ -180,6 +181,10 @@
 - [x] เพิ่มขนาดไฟล์สูงสุดที่ชัดเจนใน env/spec/runtime
 - [x] เพิ่มจำนวนไฟล์สูงสุดต่อครั้งผ่าน `MAX_UPLOAD_FILES`
 - [x] เพิ่ม confirmation dialog ฝั่ง client ก่อนลบไฟล์แนบ
+- [x] เพิ่ม committed fixture `test-private.pdf` สำหรับ automated upload test
+- [x] เพิ่ม staging-only E2E attachment fixture สำหรับคำร้อง `C69-0003` ผ่าน `E2E_FIXTURES_ENABLED=1`
+- [x] เพิ่ม tombstone state หลังลบ fixture เพื่อไม่ให้ cold serverless instance seed ไฟล์กลับมาเอง
+- [x] เพิ่ม `POST /api/test-fixtures/e2e` สำหรับ reset fixture ก่อนรัน automated E2E รอบใหม่
 
 ## [x] Slice 7: Reports and Exports
 
@@ -233,6 +238,8 @@ Environment ที่ต้องตั้ง:
 - [x] `REPORT_ORGANIZATION_NAME`
 - [x] `FOLLOW_UP_DAYS` optional, default 7
 - [x] `MAX_UPLOAD_BYTES` optional, default 4194304
+- [x] `MAX_UPLOAD_FILES` optional, default 5
+- [ ] `E2E_FIXTURES_ENABLED=1` เฉพาะ preview/staging ที่ใช้ automated test; production จริงควรเป็น `0` หรือไม่ตั้งค่า
 
 เกณฑ์ผ่าน:
 - [ ] URL ทดลองเข้าได้เฉพาะผู้รู้รหัสทดลอง
@@ -283,6 +290,9 @@ Environment ที่ต้องตั้ง:
 - [x] แก้ cold runtime bottleneck ของ `ensureSchema()` โดยเพิ่ม schema readiness check ก่อนรัน DDL/seed ชุดใหญ่
 - [x] ทำ DB round-trip probe ให้เปิดเฉพาะ diagnostic mode ด้วย `PERF_DB_PROBE=1` เพื่อไม่เพิ่ม query บน dashboard ปกติ
 - [x] คง business logic เดิม: request numbering, soft delete, auth, Blob privacy และ report filters
+- [x] P3 perceived performance: หน้าเพิ่มคำร้องไม่รอ smart defaults/location suggestions ก่อน render ฟอร์มหลัก
+- [x] P3 perceived performance: หน้ารายงานแยก filter/results ด้วย Suspense และมี loading skeleton สำหรับ client navigation
+- [x] เพิ่ม `/api/requests/form-assist` สำหรับโหลด smart defaults และ location autocomplete หลังฟอร์มหลักแสดงแล้ว
 
 หลักฐาน local:
 - [x] `npm.cmd run lint` ผ่าน
@@ -290,6 +300,7 @@ Environment ที่ต้องตั้ง:
 - [x] local smoke test ที่ `http://127.0.0.1:3001` ผ่าน route `/`, `/requests`, `/reports`, `/api/reports/excel`
 - [x] production local ก่อนแก้: `/` รอบแรกประมาณ 2146ms, `/api/requests/next-number` รอบแรกประมาณ 1766ms เพราะ `ensureSchema()` ใช้ประมาณ 1694-1718ms ใน cold runtime
 - [x] production local หลังแก้: `/` รอบแรกประมาณ 324ms, `/api/requests/next-number` รอบแรกประมาณ 102ms และ warm refresh `/` ประมาณ 155ms
+- [x] local production หลัง P3: `/requests/new` DOMContentLoaded ประมาณ 76ms, `/reports` ประมาณ 160ms, ไม่มี console error/warning ใน Chrome headless
 
 เหลือ:
 - [ ] วัดผลจริงบน Neon production ด้วยข้อมูลจริงหลัง deploy ล่าสุด
@@ -325,8 +336,9 @@ Environment ที่ต้องตั้ง:
 4. [ ] ทดสอบ login ด้วย shared password
 5. [ ] เพิ่มคำร้องจริง 2-3 รายการ
 6. [ ] ทดสอบแนบไฟล์จริง
-7. [ ] ทดสอบรายงาน/Excel/PDF/Backup
-8. [ ] เก็บ feedback จากผู้ใช้หน้างาน
+7. [ ] ถ้ารัน automated E2E ให้เปิด `E2E_FIXTURES_ENABLED=1` บน preview/staging แล้วเรียก `POST /api/test-fixtures/e2e` หลัง login เพื่อเตรียม `C69-0003` พร้อมไฟล์แนบ
+8. [ ] ทดสอบรายงาน/Excel/PDF/Backup
+9. [ ] เก็บ feedback จากผู้ใช้หน้างาน
 
 ถ้าต้องการต่อยอด smart:
 1. [x] ทำ duplicate hint

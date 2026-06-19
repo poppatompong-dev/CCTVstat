@@ -673,6 +673,87 @@ textarea:focus-visible {
   animation: cctv-reveal-up 260ms cubic-bezier(0.2, 0, 0, 1) both;
 }
 
+.skeleton-box,
+.skeleton-field,
+.skeleton-textarea,
+.skeleton-button,
+.skeleton-metric,
+.skeleton-actions,
+.skeleton-line,
+.skeleton-chart,
+.skeleton-table {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, oklch(0.915 0.008 235), oklch(0.975 0.004 235), oklch(0.915 0.008 235));
+  background-size: 220% 100%;
+  animation: cctv-skeleton 1050ms ease-in-out infinite;
+}
+
+.loading-form {
+  min-height: 320px;
+}
+
+.skeleton-field {
+  min-height: 74px;
+}
+
+.skeleton-textarea {
+  min-height: 138px;
+}
+
+.skeleton-button {
+  min-height: 44px;
+}
+
+.number-preview-skeleton {
+  min-height: 106px;
+}
+
+.skeleton-category-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.category-skeleton {
+  min-height: 118px;
+}
+
+.loading-report-summary {
+  min-height: 154px;
+}
+
+.skeleton-metric {
+  min-height: 94px;
+}
+
+.skeleton-actions {
+  min-height: 44px;
+}
+
+.loading-chart {
+  display: grid;
+  gap: 18px;
+}
+
+.skeleton-line {
+  width: 72%;
+  height: 18px;
+}
+
+.skeleton-line.short {
+  width: 42%;
+}
+
+.skeleton-chart {
+  min-height: 210px;
+}
+
+.skeleton-table {
+  min-height: 280px;
+}
+
 .form-grid,
 .filter-grid {
   display: grid;
@@ -738,6 +819,16 @@ textarea:focus-visible {
 .field small {
   color: var(--muted);
   line-height: 1.5;
+}
+
+.field .field-error {
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.field input[aria-invalid="true"] {
+  border-color: color-mix(in srgb, var(--danger) 75%, var(--line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--danger) 16%, transparent);
 }
 
 .warning-field {
@@ -1287,6 +1378,15 @@ tr:last-child td {
   }
 }
 
+@keyframes cctv-skeleton {
+  0% {
+    background-position: 120% 0;
+  }
+  100% {
+    background-position: -120% 0;
+  }
+}
+
 .danger-zone {
   margin-top: 18px;
   padding: 16px;
@@ -1665,7 +1765,8 @@ tr:last-child td {
   .metric-grid,
   .form-grid,
   .filter-grid,
-  .report-grid {
+  .report-grid,
+  .skeleton-category-grid {
     grid-template-columns: 1fr;
   }
 

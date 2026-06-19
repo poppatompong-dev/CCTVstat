@@ -13,6 +13,7 @@
 | 6 | กดเพิ่มคำร้องใหม่ | ฟอร์มพร้อมกรอกใหม่ |
 | 7 | เปลี่ยนวันที่รับคำร้อง | เลขคำร้องโดยประมาณเปลี่ยนตามปีงบประมาณ |
 | 8 | เปิดฟอร์มหลังมีข้อมูลเดิม | ประเภทผู้ขอและสถานะ default ตามค่าที่ใช้บ่อยและยังแก้ได้ |
+| 9 | เปิดหน้าเพิ่มคำร้องบน Vercel | shell/form loading state แสดงก่อน smart defaults และ location autocomplete โหลดตามมา |
 
 ## 2. Request Number
 | TC | ทดสอบ | ผลที่คาดหวัง |
@@ -66,6 +67,14 @@
 | 12 | เลือกไฟล์เกินจำนวนที่กำหนด | ระบบจำกัดตามค่า `MAX_UPLOAD_FILES` |
 | 13 | เลือกไฟล์เกิน `MAX_UPLOAD_BYTES` | ระบบปฏิเสธไฟล์นั้น |
 | 14 | ระหว่างอัปโหลด | แสดง modal/pending state และปุ่มไม่ควรถูกกดซ้ำ |
+| 15 | Automated E2E upload fixture | ใช้ไฟล์ committed fixture `test-private.pdf` จาก root repo ได้ |
+| 16 | Automated E2E view/download/delete fixture | staging ที่เปิด `E2E_FIXTURES_ENABLED=1` มีคำร้อง `C69-0003` พร้อมไฟล์แนบอย่างน้อย 1 ไฟล์สำหรับทดสอบ |
+
+หมายเหตุ E2E:
+- `test-private.pdf` เป็น fixture สำหรับ test runner เท่านั้น
+- `E2E_FIXTURES_ENABLED=1` ควรเปิดเฉพาะ Vercel preview/staging ที่ใช้ automated test ไม่ใช่ production จริง
+- ก่อนรันชุด view/download/delete ให้เรียก `POST /api/test-fixtures/e2e` หลัง login เพื่อ reset fixture ให้พร้อม
+- หลังทดสอบลบไฟล์แนบ fixture แล้ว ระบบจะ mark tombstone เพื่อไม่ให้ ordinary page load หรือ cold serverless instance seed ไฟล์กลับมาทันที
 
 ## 6. Reports
 | TC | ทดสอบ | ผลที่คาดหวัง |
@@ -97,6 +106,7 @@
 | 2 | duplicate hint แสดงรายการ | คลิกเปิดคำร้องเดิมได้ |
 | 3 | มี duplicate hint | ยังบันทึกคำร้องใหม่ได้ ไม่ถูก block |
 | 4 | เคยกรอกสถานที่มาก่อน | ช่องสถานที่มี autocomplete |
+| 5 | เปิดหน้าเพิ่มคำร้องครั้งแรก | smart assist ใช้ `/api/requests/form-assist` และไม่ทำให้ฟอร์มหลักรอ query เสริมก่อนแสดง |
 
 ## 7. Performance Target
 | รายการ | เป้าหมาย |
@@ -104,6 +114,8 @@
 | เพิ่มคำร้องไม่แนบไฟล์ | ไม่เกิน 30 วินาที |
 | Export Excel | รองรับข้อมูลอย่างน้อย 5,000 รายการ |
 | ค้นหา | ไม่ช้าเกินจำเป็นสำหรับข้อมูลหลักพันรายการ |
+| เปิดหน้าเพิ่มคำร้อง | เห็น shell หรือฟอร์มหลักเร็ว โดย smart assist โหลดตามหลังแบบไม่ block |
+| เปิดหน้ารายงาน | เห็น shell/loading skeleton ก่อนผล aggregate หาก query ยังไม่เสร็จ |
 
 ## 8. Responsive / Field Use
 | TC | ทดสอบ | ผลที่คาดหวัง |

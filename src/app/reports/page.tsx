@@ -1,15 +1,22 @@
+import { Suspense } from "react";
 import { Download, Printer } from "lucide-react";
 import { requireAuth } from "@/lib/auth";
 import { defaultReportRange } from "@/lib/dates";
 import { getMasters, getReport } from "@/lib/db";
 import { formatNumber } from "@/lib/format";
 import { perfLog, perfStart, timed } from "@/lib/perf";
-import type { RequestFilters } from "@/lib/types";
+import type { MasterRow, ReportData, RequestFilters } from "@/lib/types";
 import { AppShell } from "@/components/AppShell";
 import { PageHeader } from "@/components/PageHeader";
 import { RequestList } from "@/components/RequestList";
 
 type SearchParams = Promise<Record<string, string | string[] | undefined>>;
+type Masters = {
+  requesterTypes: MasterRow[];
+  categories: MasterRow[];
+  statuses: MasterRow[];
+  evidenceTypes: MasterRow[];
+};
 
 function readFilters(params: Record<string, string | string[] | undefined>): RequestFilters {
   const defaults = defaultReportRange();
@@ -65,62 +72,80 @@ function TrendChart({ data }: { data: Array<{ month: string; count: number }> })
   );
 }
 
-export default async function ReportsPage({ searchParams }: { searchParams: SearchParams }) {
-  const routeStart = perfStart();
-  try {
-  await timed("/reports requireAuth", () => requireAuth());
-  const params = await timed("/reports searchParams", () => searchParams);
-  const filters = readFilters(params);
-  const [masters, report] = await Promise.all([
-    timed("/reports getMasters", () => getMasters()),
-    timed("/reports getReport", () => getReport(filters)),
-  ]);
+async function ReportFilters({
+  filters,
+  mastersPromise,
+}: {
+  filters: RequestFilters;
+  mastersPromise: Promise<Masters>;
+}) {
+  const masters = await mastersPromise;
+
+  return (
+    <section className="panel">
+      <form className="filter-grid">
+        <label className="field">
+          <span>ตั้งแต่วันที่</span>
+          <input name="startDate" type="date" defaultValue={filters.startDate} required />
+        </label>
+        <label className="field">
+          <span>ถึงวันที่</span>
+          <input name="endDate" type="date" defaultValue={filters.endDate} required />
+        </label>
+        <label className="field">
+          <span>ประเภทผู้ขอ</span>
+          <select name="requesterTypeId" defaultValue={filters.requesterTypeId ?? ""}>
+            <option value="">ทั้งหมด</option>
+            {masters.requesterTypes.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+          </select>
+        </label>
+        <label className="field">
+          <span>หมวดหมู่</span>
+          <select name="categoryId" defaultValue={filters.categoryId ?? ""}>
+            <option value="">ทั้งหมด</option>
+            {masters.categories.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+          </select>
+        </label>
+        <label className="field">
+          <span>สถานะ</span>
+          <select name="statusId" defaultValue={filters.statusId ?? ""}>
+            <option value="">ทั้งหมด</option>
+            {masters.statuses.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
+          </select>
+        </label>
+        <div className="filter-actions">
+          <button className="btn primary" type="submit">แสดงรายงาน</button>
+        </div>
+      </form>
+    </section>
+  );
+}
+
+function ReportFiltersSkeleton() {
+  return (
+    <section className="panel">
+      <div className="filter-grid loading-form" aria-label="กำลังเตรียมตัวกรอง">
+        {Array.from({ length: 5 }).map((_, index) => (
+          <div className="skeleton-field" key={index} />
+        ))}
+        <div className="skeleton-button" />
+      </div>
+    </section>
+  );
+}
+
+async function ReportResults({
+  filters,
+  reportPromise,
+}: {
+  filters: RequestFilters;
+  reportPromise: Promise<ReportData>;
+}) {
+  const report = await reportPromise;
   const query = qs(filters);
 
   return (
-    <AppShell>
-      <PageHeader
-        title="รายงานสถิติ"
-        description="สรุปจำนวนคำร้องตามช่วงวันที่ ประเภทผู้ขอ หมวดหมู่ และสถานะ"
-      />
-
-      <section className="panel">
-        <form className="filter-grid">
-          <label className="field">
-            <span>ตั้งแต่วันที่</span>
-            <input name="startDate" type="date" defaultValue={filters.startDate} required />
-          </label>
-          <label className="field">
-            <span>ถึงวันที่</span>
-            <input name="endDate" type="date" defaultValue={filters.endDate} required />
-          </label>
-          <label className="field">
-            <span>ประเภทผู้ขอ</span>
-            <select name="requesterTypeId" defaultValue={filters.requesterTypeId ?? ""}>
-              <option value="">ทั้งหมด</option>
-              {masters.requesterTypes.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span>หมวดหมู่</span>
-            <select name="categoryId" defaultValue={filters.categoryId ?? ""}>
-              <option value="">ทั้งหมด</option>
-              {masters.categories.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
-            </select>
-          </label>
-          <label className="field">
-            <span>สถานะ</span>
-            <select name="statusId" defaultValue={filters.statusId ?? ""}>
-              <option value="">ทั้งหมด</option>
-              {masters.statuses.map((row) => <option key={row.id} value={row.id}>{row.name}</option>)}
-            </select>
-          </label>
-          <div className="filter-actions">
-            <button className="btn primary" type="submit">แสดงรายงาน</button>
-          </div>
-        </form>
-      </section>
-
+    <>
       <section className="report-summary">
         <div className="report-total">
           <span>จำนวนคำร้องทั้งหมด</span>
@@ -178,6 +203,61 @@ export default async function ReportsPage({ searchParams }: { searchParams: Sear
         </div>
         <RequestList rows={report.rows} />
       </section>
+    </>
+  );
+}
+
+function ReportResultsSkeleton() {
+  return (
+    <>
+      <section className="report-summary loading-report-summary" aria-label="กำลังสรุปรายงาน">
+        <div className="skeleton-metric" />
+        <div className="skeleton-metric" />
+        <div className="skeleton-metric" />
+        <div className="skeleton-actions" />
+      </section>
+      <section className="report-grid">
+        {Array.from({ length: 4 }).map((_, index) => (
+          <div className="panel loading-chart" key={index}>
+            <div className="skeleton-line short" />
+            <div className="skeleton-chart" />
+          </div>
+        ))}
+      </section>
+      <section className="section-block">
+        <div className="section-head">
+          <h2>ตารางรายการคำร้อง</h2>
+          <span className="muted">กำลังโหลดข้อมูล</span>
+        </div>
+        <div className="responsive-table skeleton-table" />
+      </section>
+    </>
+  );
+}
+
+export default async function ReportsPage({ searchParams }: { searchParams: SearchParams }) {
+  const routeStart = perfStart();
+  try {
+  await timed("/reports requireAuth", () => requireAuth());
+  const params = await timed("/reports searchParams", () => searchParams);
+  const filters = readFilters(params);
+  const mastersPromise = timed("/reports getMasters", () => getMasters());
+  const reportPromise = timed("/reports getReport", () => getReport(filters));
+
+  return (
+    <AppShell>
+      <PageHeader
+        title="รายงานสถิติ"
+        description="สรุปจำนวนคำร้องตามช่วงวันที่ ประเภทผู้ขอ หมวดหมู่ และสถานะ"
+      />
+
+      <Suspense fallback={<ReportFiltersSkeleton />}>
+        <ReportFilters filters={filters} mastersPromise={mastersPromise} />
+      </Suspense>
+
+      <Suspense fallback={<ReportResultsSkeleton />}>
+        <ReportResults filters={filters} reportPromise={reportPromise} />
+      </Suspense>
     </AppShell>
   );
   } finally {

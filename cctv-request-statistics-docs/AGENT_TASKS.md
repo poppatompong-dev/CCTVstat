@@ -2,7 +2,7 @@
 
 # รายการงานสำหรับ AI Agent
 
-เอกสารนี้สะท้อนสถานะ implementation ปัจจุบันของ CCTVStat หลังย้ายมาใช้ Next.js, Neon PostgreSQL, Vercel Blob private storage, performance instrumentation และ multi-file attachment UX แล้ว
+เอกสารนี้สะท้อนสถานะ implementation ปัจจุบันของ CCTVStat หลังย้ายมาใช้ Next.js, Neon PostgreSQL, Vercel Blob private storage, performance instrumentation, perceived-performance streaming UI และ multi-file attachment UX แล้ว
 
 ## Phase 1: Project Setup
 - [x] สร้าง Next.js 16 + React 19 + TypeScript project
@@ -43,6 +43,7 @@
 - [x] smart defaults จากข้อมูลที่ใช้จริง
 - [x] duplicate hint แบบไม่ block
 - [x] location autocomplete
+- [x] โหลด smart defaults และ location autocomplete ผ่าน `/api/requests/form-assist` หลังฟอร์มหลักแสดงแล้ว
 - [x] modal/pending state ระหว่างบันทึก
 - [x] success message พร้อมเลขคำร้องใหญ่ชัดเจน
 
@@ -94,11 +95,14 @@
 - [x] Export Excel
 - [x] Print-to-PDF view
 - [x] Export Backup Excel หลาย sheet
+- [x] แสดง loading skeleton ระหว่าง query รายงานเพื่อให้หน้า feedback ทันที
 
 ## Phase 9: Performance
 - [x] เพิ่ม timing instrumentation สำหรับ route/function สำคัญ
 - [x] วัด dev mode เทียบ production local
 - [x] แก้ cold runtime cost ของ `ensureSchema()`
+- [x] แยก smart assist ออกจาก critical render path ของหน้าเพิ่มคำร้อง
+- [x] ใช้ Suspense/loading skeleton กับหน้าเพิ่มคำร้องและรายงาน
 - [x] เพิ่ม `PERF_DB_PROBE=1` สำหรับ diagnostic ชั่วคราว
 - [ ] วัดผลซ้ำบน Vercel/Neon production หลัง deploy ล่าสุด
 - [ ] ทดสอบ Excel/backup กับข้อมูล 5,000+ รายการ

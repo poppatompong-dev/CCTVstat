@@ -2,6 +2,7 @@ import type { MasterRow, RequestRow } from "@/lib/types";
 import { CategoryPicker } from "@/components/CategoryPicker";
 import { DuplicateHint } from "@/components/DuplicateHint";
 import { RequestNumberPreview } from "@/components/RequestNumberPreview";
+import { RequestFormAssist } from "@/components/RequestFormAssist";
 import { SubmitButton } from "@/components/SubmitButton";
 
 export function RequestForm({
@@ -10,8 +11,9 @@ export function RequestForm({
   request,
   submitLabel,
   showRequestNo = false,
-  locationSuggestions = [],
+  enableFormAssist = false,
   showDuplicateHint = false,
+  requestNoError,
 }: {
   action: (formData: FormData) => void | Promise<void>;
   masters: {
@@ -22,8 +24,9 @@ export function RequestForm({
   request?: RequestRow;
   submitLabel: string;
   showRequestNo?: boolean;
-  locationSuggestions?: string[];
+  enableFormAssist?: boolean;
   showDuplicateHint?: boolean;
+  requestNoError?: string | null;
 }) {
   const requesterTypes = masters.requesterTypes.filter((row) => row.is_active || row.id === request?.requester_type_id);
   const categories = masters.categories.filter((row) => row.is_active || row.id === request?.category_id);
@@ -40,8 +43,19 @@ export function RequestForm({
       {showRequestNo ? (
         <label className="field span-2 warning-field">
           <span>เลขคำร้อง</span>
-          <input name="request_no" defaultValue={request?.request_no} required pattern="C\d{2}-\d{4}" />
-          <small>แก้ไขเฉพาะกรณีแก้ข้อมูลผิดหรือนำเข้าข้อมูลย้อนหลัง</small>
+          <input
+            name="request_no"
+            defaultValue={request?.request_no}
+            required
+            pattern="C\d{2}-\d{4}"
+            aria-invalid={requestNoError ? "true" : undefined}
+            aria-describedby={requestNoError ? "request-no-error" : undefined}
+          />
+          {requestNoError ? (
+            <small id="request-no-error" className="field-error">{requestNoError}</small>
+          ) : (
+            <small>แก้ไขเฉพาะกรณีแก้ข้อมูลผิดหรือนำเข้าข้อมูลย้อนหลัง</small>
+          )}
         </label>
       ) : null}
 
@@ -52,7 +66,12 @@ export function RequestForm({
 
       <label className="field">
         <span>ประเภทผู้ขอ</span>
-        <select name="requester_type_id" defaultValue={request?.requester_type_id} required>
+        <select
+          name="requester_type_id"
+          defaultValue={request?.requester_type_id}
+          data-smart-default="requester"
+          required
+        >
           {requesterTypes.map((row) => (
             <option key={row.id} value={row.id}>
               {row.name}
@@ -65,7 +84,12 @@ export function RequestForm({
 
       <label className="field">
         <span>สถานะ</span>
-        <select name="status_id" defaultValue={request?.status_id} required>
+        <select
+          name="status_id"
+          defaultValue={request?.status_id}
+          data-smart-default="status"
+          required
+        >
           {statuses.map((row) => (
             <option key={row.id} value={row.id}>
               {row.name}
@@ -80,16 +104,11 @@ export function RequestForm({
           name="location_text"
           defaultValue={request?.location_text ?? ""}
           placeholder="ไม่บังคับ"
-          list={locationSuggestions.length ? "location-suggestions" : undefined}
+          list={enableFormAssist ? "location-suggestions" : undefined}
         />
-        {locationSuggestions.length ? (
-          <datalist id="location-suggestions">
-            {locationSuggestions.map((value) => (
-              <option key={value} value={value} />
-            ))}
-          </datalist>
-        ) : null}
       </label>
+
+      {enableFormAssist ? <RequestFormAssist /> : null}
 
       {showDuplicateHint ? (
         <div className="span-2">

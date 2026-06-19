@@ -29,6 +29,7 @@ APP_PASSWORD="..."
 SESSION_SECRET="..."
 MAX_UPLOAD_BYTES=4194304
 MAX_UPLOAD_FILES=5
+E2E_FIXTURES_ENABLED=0
 REPORT_ORGANIZATION_NAME="กลุ่มงานสถิติข้อมูลและสารสนเทศ"
 FOLLOW_UP_DAYS=7
 ```
@@ -47,6 +48,15 @@ Environment ที่จำเป็นบน Vercel production:
 | `MAX_UPLOAD_BYTES` | No | default 4194304 bytes |
 | `MAX_UPLOAD_FILES` | No | default 5 files per upload action |
 | `PERF_DB_PROBE` | No | ตั้งเป็น `1` เฉพาะตอน diagnostic เพื่อ log `SELECT 1` และ active request count; ไม่ควรเปิดค้างถ้าไม่ต้องวัด |
+| `E2E_FIXTURES_ENABLED` | No | ตั้งเป็น `1` เฉพาะ staging/preview ที่ใช้ automated E2E; จะ seed คำร้อง `C69-0003` พร้อม fixture attachment `test-private.pdf` ถ้ายังไม่มีไฟล์แนบ |
+
+ห้ามเปิด `E2E_FIXTURES_ENABLED=1` ใน production จริง เพราะ flag นี้มีไว้สร้างข้อมูลทดสอบสำหรับ automation เท่านั้น
+
+เมื่อต้อง reset fixture สำหรับ automated test ให้ login ผ่าน access gate แล้วเรียก:
+```text
+POST /api/test-fixtures/e2e
+```
+endpoint นี้ทำงานเฉพาะเมื่อ `E2E_FIXTURES_ENABLED=1` และใช้เพื่อเตรียมคำร้อง `C69-0003` พร้อมไฟล์ `test-private.pdf` ก่อนรัน view/download/delete tests
 
 ## 4. Folder Structure
 ```text

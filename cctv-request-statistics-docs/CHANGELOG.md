@@ -2,6 +2,34 @@
 
 # Changelog
 
+## 1.5.0 - Perceived Performance and Streaming UI
+### Added
+- เพิ่ม `GET /api/requests/form-assist` สำหรับ smart defaults และ location suggestions ที่โหลดหลังหน้าเพิ่มคำร้องแสดงแล้ว
+- เพิ่ม loading skeleton สำหรับหน้าเพิ่มคำร้องและหน้ารายงาน เพื่อให้ client navigation มี feedback ทันที
+
+### Changed
+- หน้าเพิ่มคำร้องไม่รอ `getSmartDefaults()` และ `getLocationSuggestions()` ก่อน render ฟอร์มหลักแล้ว
+- หน้ารายงานแยกฟิลเตอร์และผลรายงานไว้ใน Suspense boundaries เพื่อให้ shell แสดงก่อน query aggregate เสร็จ
+
+### Verified
+- `npm.cmd run lint` ผ่าน
+- `npm.cmd run build` ผ่าน
+- local production smoke test ผ่าน โดย `/requests/new` DOMContentLoaded ประมาณ 76ms และ `/reports` ประมาณ 160ms บน `127.0.0.1:3001`
+
+## 1.4.0 - E2E Fixture Support and Request Number Feedback
+### Added
+- เพิ่ม committed fixture `test-private.pdf` สำหรับ automated upload test
+- เพิ่ม `E2E_FIXTURES_ENABLED` สำหรับ staging/preview เพื่อ seed คำร้อง `C69-0003` พร้อมไฟล์แนบสำหรับทดสอบ view/download/delete
+- เพิ่ม `POST /api/test-fixtures/e2e` สำหรับ reset fixture อย่างตั้งใจก่อนรัน automated E2E
+- เพิ่ม tombstone state หลังลบ fixture เพื่อกัน cold serverless instance seed ไฟล์กลับมาระหว่าง delete test
+
+### Changed
+- ปรับ error การแก้เลขคำร้องซ้ำให้บอกเลขที่ชนชัดขึ้นและแสดงใต้ช่องเลขคำร้อง
+- fixture attachment ใช้ endpoint download ของระบบเหมือนไฟล์จริง และยังต้องผ่าน access gate
+
+### Notes
+- `E2E_FIXTURES_ENABLED=1` ใช้เฉพาะ automated E2E staging/preview เท่านั้น ไม่ควรเปิดใน production จริง
+
 ## 0.1.0 - Initial Scope
 ### Added
 - กำหนดระบบเป็น Web App ภายใน

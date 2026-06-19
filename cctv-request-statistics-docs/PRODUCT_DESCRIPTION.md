@@ -27,6 +27,8 @@ Users create a new CCTV request by entering only the required statistical fields
 
 Optional fields include location and notes. The system previews the next likely request number, but the real request number is confirmed only after saving. Request numbers follow the Thai fiscal year format, such as `C69-0001`.
 
+The main request form should render before non-critical assistive data is ready. Smart defaults and location autocomplete load after the form is visible so staff can start working immediately, especially on Vercel/Neon cold starts.
+
 ### 4. Search, Filter, and Edit Requests
 
 Users can search by request number or location and filter by date range, requester type, category, status, or quick views such as this month, follow-up, and found footage. Users can edit request details, intentionally correct request numbers for backfill/correction cases, and soft-delete records.
@@ -42,6 +44,8 @@ Users can manage requester types, categories, statuses, and evidence types. Item
 ### 7. Reports and Exports
 
 Users can generate reports by date range and filters. Reports include totals, category breakdowns, requester type breakdowns, status breakdowns, monthly trends, found-rate insights, detailed request tables, Excel export, print-to-PDF view, and backup export.
+
+The reports page should provide immediate shell/loading feedback while aggregate queries are running, instead of keeping the previous screen visually frozen.
 
 ## Important Product Rules
 
@@ -74,7 +78,8 @@ Users can generate reports by date range and filters. Reports include totals, ca
 - Reports and exports respect filters.
 - Quick filters show the expected request subsets.
 - Local development login works on `127.0.0.1:3001`.
+- Request creation and reports show fast shell/loading feedback before slower assistive or aggregate data finishes loading.
 
 ## Current Status
 
-The MVP application code is complete for local testing. Lint and production build pass. Local dashboard, request list, request creation page, reports, performance instrumentation, and attachment UX have been verified at build/smoke-test level. Remaining work before real trial usage is deployment/runtime validation on Vercel with real environment variables, Neon PostgreSQL, and Vercel Blob.
+The MVP application code is complete for local testing. Lint and production build pass. Local dashboard, request list, request creation page, reports, performance instrumentation, perceived-performance loading states, and attachment UX have been verified at build/smoke-test level. Remaining work before real trial usage is deployment/runtime validation on Vercel with real environment variables, Neon PostgreSQL, and Vercel Blob.
