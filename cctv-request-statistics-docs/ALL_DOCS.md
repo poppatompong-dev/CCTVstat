@@ -570,6 +570,8 @@ Response เป็นไฟล์ Excel หลาย sheet
 
 UI ต้องแสดง preview ก่อนอัปโหลดสำหรับรูปภาพ และแสดงการ์ดชนิดไฟล์สำหรับ PDF/DOC/DOCX หลังอัปโหลดต้องแสดง thumbnail/การ์ดไฟล์ผ่าน endpoint ของระบบ ไม่เปิด Blob URL ตรงใน UI
 
+รูปภาพหลังอัปโหลดต้องเรียก endpoint download แบบ `disposition=inline` เพื่อให้ browser แสดงเป็น thumbnail ได้ ส่วนปุ่มดาวน์โหลดต้องเรียกแบบ `disposition=attachment` เพื่อบังคับดาวน์โหลดไฟล์
+
 ## 8. Blob Path Structure
 ```text
 cctv-requests/
@@ -2611,6 +2613,7 @@ INSERT INTO evidence_types (name, sort_order, is_active) VALUES
 | 8 | ดูหน้าแก้ไข | เห็นรายการไฟล์แนบ |
 | 9 | เลือกหลายไฟล์พร้อมกัน | แสดง preview และอัปโหลดได้ตาม `MAX_UPLOAD_FILES` |
 | 10 | เลือกรูปภาพ | เห็น thumbnail ก่อนและหลังอัปโหลด |
+| 10.1 | เปิดรูปภาพที่อัปโหลดใน gallery | endpoint ส่ง response แบบ inline และ `<img>` แสดง thumbnail ได้ |
 | 11 | เลือก PDF/DOC/DOCX | เห็นการ์ดชนิดไฟล์ก่อนและหลังอัปโหลด |
 | 12 | เลือกไฟล์เกินจำนวนที่กำหนด | ระบบจำกัดตามค่า `MAX_UPLOAD_FILES` |
 | 13 | เลือกไฟล์เกิน `MAX_UPLOAD_BYTES` | ระบบปฏิเสธไฟล์นั้น |
@@ -2993,6 +2996,7 @@ Location autocomplete:
 -> upload ไฟล์ไป Vercel Blob Private Storage
 -> บันทึก metadata ใน Neon
 -> แสดง thumbnail/gallery ของไฟล์แนบในหน้าคำร้อง
+-> รูปภาพใน gallery โหลดผ่าน endpoint แบบ inline ส่วนปุ่มดาวน์โหลดโหลดผ่าน endpoint แบบ attachment
 ```
 
 กติกา:
@@ -3028,6 +3032,7 @@ Metadata ที่ควรเก็บ:
 หลักการ:
 - UI ไม่ควรแสดง private storage URL
 - ต้องตรวจ session จาก access gate ก่อน download
+- รูปภาพ thumbnail ต้องได้ `Content-Disposition: inline`; ปุ่มดาวน์โหลดต้องได้ attachment/download response
 - ถ้าไฟล์หายจาก storage แต่ metadata ยังอยู่ ต้องแสดง error ที่เข้าใจง่าย
 
 ## 7. Workflow: ค้นหาและแก้ไข

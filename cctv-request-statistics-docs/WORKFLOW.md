@@ -83,6 +83,7 @@
 -> upload ไฟล์ไป Vercel Blob Private Storage
 -> บันทึก metadata ใน Neon
 -> แสดง thumbnail/gallery ของไฟล์แนบในหน้าคำร้อง
+-> รูปภาพใน gallery โหลดผ่าน endpoint แบบ inline ส่วนปุ่มดาวน์โหลดโหลดผ่าน endpoint แบบ attachment
 ```
 
 กติกา:
@@ -118,6 +119,7 @@ Metadata ที่ควรเก็บ:
 หลักการ:
 - UI ไม่ควรแสดง private storage URL
 - ต้องตรวจ session จาก access gate ก่อน download
+- รูปภาพ thumbnail ต้องได้ `Content-Disposition: inline`; ปุ่มดาวน์โหลดต้องได้ attachment/download response
 - ถ้าไฟล์หายจาก storage แต่ metadata ยังอยู่ ต้องแสดง error ที่เข้าใจง่าย
 
 ## 7. Workflow: ค้นหาและแก้ไข

@@ -46,6 +46,8 @@
 
 UI ต้องแสดง preview ก่อนอัปโหลดสำหรับรูปภาพ และแสดงการ์ดชนิดไฟล์สำหรับ PDF/DOC/DOCX หลังอัปโหลดต้องแสดง thumbnail/การ์ดไฟล์ผ่าน endpoint ของระบบ ไม่เปิด Blob URL ตรงใน UI
 
+รูปภาพหลังอัปโหลดต้องเรียก endpoint download แบบ `disposition=inline` เพื่อให้ browser แสดงเป็น thumbnail ได้ ส่วนปุ่มดาวน์โหลดต้องเรียกแบบ `disposition=attachment` เพื่อบังคับดาวน์โหลดไฟล์
+
 ## 8. Blob Path Structure
 ```text
 cctv-requests/

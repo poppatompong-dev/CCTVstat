@@ -22,6 +22,10 @@ function TypeIcon({ attachment }: { attachment: AttachmentRow }) {
   return <FileArchive size={24} aria-hidden="true" />;
 }
 
+function attachmentUrl(id: number, disposition: "inline" | "attachment") {
+  return `/api/attachments/${id}/download?disposition=${disposition}`;
+}
+
 export function AttachmentGallery({
   requestId,
   attachments,
@@ -37,10 +41,10 @@ export function AttachmentGallery({
     <div className="attachment-grid attached-files">
       {attachments.map((attachment) => (
         <article className="attachment-card uploaded" key={attachment.id}>
-          <a className="attachment-thumb" href={`/api/attachments/${attachment.id}/download`} target="_blank" rel="noreferrer">
+          <a className="attachment-thumb" href={attachmentUrl(attachment.id, "inline")} target="_blank" rel="noreferrer">
             {isImage(attachment) ? (
               // eslint-disable-next-line @next/next/no-img-element
-              <img src={`/api/attachments/${attachment.id}/download`} alt="" loading="lazy" />
+              <img src={attachmentUrl(attachment.id, "inline")} alt="" loading="lazy" />
             ) : (
               <span>
                 <TypeIcon attachment={attachment} />
@@ -57,7 +61,7 @@ export function AttachmentGallery({
             <p>{optionalText(attachment.note)}</p>
           </div>
           <div className="row-actions">
-            <a className="btn small outline" href={`/api/attachments/${attachment.id}/download`}>
+            <a className="btn small outline" href={attachmentUrl(attachment.id, "attachment")}>
               <Download size={15} aria-hidden="true" />
               ดาวน์โหลด
             </a>
