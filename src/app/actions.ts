@@ -13,6 +13,7 @@ import {
   getAttachment,
   insertAttachment,
   markE2EAttachmentFixtureDeleted,
+  reorderMaster,
   softDeleteRequest,
   updateRequest,
   upsertMaster,
@@ -137,6 +138,24 @@ export async function saveMasterAction(kind: MasterKind, formData: FormData) {
 
   revalidatePath(path);
   message(path, "บันทึกสำเร็จ");
+}
+
+export async function reorderMasterAction(kind: MasterKind, orderedIds: number[]) {
+  await requireAuth();
+  const path = masterSettingsPath(kind);
+  const parsed = z.array(z.number().int().positive()).safeParse(orderedIds);
+
+  if (!parsed.success) {
+    return { ok: false, message: "ลำดับที่ส่งมาไม่ถูกต้อง" };
+  }
+
+  try {
+    await reorderMaster(kind, parsed.data);
+    revalidatePath(path);
+    return { ok: true, message: "บันทึกลำดับแล้ว" };
+  } catch {
+    return { ok: false, message: "บันทึกลำดับไม่สำเร็จ ระบบคืนตำแหน่งเดิมแล้ว" };
+  }
 }
 
 function fileExtension(name: string) {
