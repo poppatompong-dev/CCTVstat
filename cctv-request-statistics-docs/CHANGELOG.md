@@ -2,6 +2,19 @@
 
 # Changelog
 
+## 1.6.0 - Master Data Drag Ordering
+### Added
+- เพิ่ม drag handle สำหรับเรียงประเภทผู้ขอ หมวดหมู่ สถานะ และประเภทหลักฐานด้วยเมาส์ การสัมผัส และคีย์บอร์ด
+- เพิ่ม auto-save หลังวาง พร้อมสถานะกำลังบันทึก สำเร็จ และ rollback เมื่อผิดพลาด
+- เพิ่ม validation ว่ารายการ ID ที่ส่งมาไม่ซ้ำ ไม่ขาด และไม่มี ID แปลกปลอม
+- เพิ่มการตรวจและปรับข้อมูลเดิมที่มี `sort_order` ซ้ำหรือเว้นช่วงระหว่างเตรียม schema
+
+### Changed
+- เอาช่องกรอก `sort_order` ออกจาก UI และให้รายการใหม่ต่อท้ายอัตโนมัติ
+- การเรียงใหม่กำหนด `sort_order` เป็น `1..N` ทั้งชุด
+- การเพิ่มชื่อซ้ำถูกปฏิเสธ แทนการอัปเดตรายการเดิมแบบเงียบ ๆ
+- แก้ `DATA_MODEL.md` ให้ `semantic_key` อยู่ใน `statuses` ตรงกับ runtime schema
+
 ## 1.5.0 - Perceived Performance and Streaming UI
 ### Added
 - เพิ่ม `GET /api/requests/form-assist` สำหรับ smart defaults และ location suggestions ที่โหลดหลังหน้าเพิ่มคำร้องแสดงแล้ว

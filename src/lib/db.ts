@@ -18,6 +18,7 @@ import type {
   SmartDefaults,
 } from "@/lib/types";
 import { timed } from "@/lib/perf";
+import { hasCanonicalMasterOrder, normalizeMasterOrder } from "@/lib/master-order";
 
 let sqlClient: NeonQueryFunction<false, false> | null = null;
 let schemaReady = false;
@@ -195,7 +196,32 @@ async function initializeSchema() {
   await deactivateDeprecated("categories", ["คดีอาชญากรรม", "เหตุเดือดร้อนรำคาญ"]);
   await deactivateDeprecated("statuses", ["ยกเลิก"]);
 
-  schemaReady = true;
+}
+
+async function normalizeStoredMasterOrders() {
+  const storedRows = await query<{ kind: MasterKind; id: number; sort_order: number }>(`
+    SELECT 'requester_types'::text AS kind, id, sort_order FROM requester_types
+    UNION ALL
+    SELECT 'categories'::text AS kind, id, sort_order FROM categories
+    UNION ALL
+    SELECT 'statuses'::text AS kind, id, sort_order FROM statuses
+    UNION ALL
+    SELECT 'evidence_types'::text AS kind, id, sort_order FROM evidence_types
+    ORDER BY kind, sort_order, id
+  `);
+
+  for (const kind of masterTables) {
+    const rows = storedRows.filter((row) => row.kind === kind);
+    if (hasCanonicalMasterOrder(rows.map((row) => row.sort_order))) continue;
+
+    await query(
+      `UPDATE ${kind} AS master
+       SET sort_order = positions.sort_order::int, updated_at = NOW()
+       FROM unnest($1::int[]) WITH ORDINALITY AS positions(id, sort_order)
+       WHERE master.id = positions.id`,
+      [rows.map((row) => row.id)],
+    );
+  }
 }
 
 async function schemaLooksInitialized() {
@@ -229,12 +255,12 @@ async function schemaLooksInitialized() {
 }
 
 async function initializeSchemaIfNeeded() {
-  if (await timed("schema readiness check", () => schemaLooksInitialized())) {
-    schemaReady = true;
-    return;
+  if (!(await timed("schema readiness check", () => schemaLooksInitialized()))) {
+    await initializeSchema();
   }
 
-  await initializeSchema();
+  await normalizeStoredMasterOrders();
+  schemaReady = true;
 }
 
 async function ensureE2EFixtureStateTable() {
@@ -429,28 +455,43 @@ export async function upsertMaster(kind: MasterKind, form: FormData) {
   assertMasterKind(kind);
   const id = Number(form.get("id") || 0);
   const name = String(form.get("name") || "").trim();
-  const sortOrder = Number(form.get("sort_order") || 0);
   const isActive = form.get("is_active") === "on";
   if (!name) throw new Error("กรุณาระบุชื่อ");
 
   if (id) {
     await query(
       `UPDATE ${kind}
-       SET name = $1, sort_order = $2, is_active = $3, updated_at = NOW()
-       WHERE id = $4`,
-      [name, sortOrder, isActive, id],
+       SET name = $1, is_active = $2, updated_at = NOW()
+       WHERE id = $3`,
+      [name, isActive, id],
     );
   } else {
     await query(
       `INSERT INTO ${kind} (name, sort_order, is_active)
-       VALUES ($1, $2, $3)
-       ON CONFLICT (name)
-       DO UPDATE SET sort_order = EXCLUDED.sort_order,
-         is_active = EXCLUDED.is_active,
-         updated_at = NOW()`,
-      [name, sortOrder, isActive],
+       SELECT $1, COALESCE(MAX(sort_order), 0) + 1, $2
+       FROM ${kind}`,
+      [name, isActive],
     );
   }
+}
+
+export async function reorderMaster(kind: MasterKind, orderedIds: number[]) {
+  await ensureSchema();
+  assertMasterKind(kind);
+
+  const existing = await query<{ id: number }>(`SELECT id FROM ${kind} ORDER BY sort_order, id`);
+  const normalized = normalizeMasterOrder(
+    existing.map((row) => row.id),
+    orderedIds,
+  );
+
+  await query(
+    `UPDATE ${kind} AS master
+     SET sort_order = positions.sort_order::int, updated_at = NOW()
+     FROM unnest($1::int[]) WITH ORDINALITY AS positions(id, sort_order)
+     WHERE master.id = positions.id`,
+    [normalized.map((row) => row.id)],
+  );
 }
 
 function filtersToWhere(filters: RequestFilters, startIndex = 1) {

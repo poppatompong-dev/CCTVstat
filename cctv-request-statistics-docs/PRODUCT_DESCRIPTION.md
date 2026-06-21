@@ -39,7 +39,7 @@ After a request is created, users can optionally upload supporting evidence such
 
 ### 6. Master Data Management
 
-Users can manage requester types, categories, statuses, and evidence types. Items can be added, renamed, reordered, activated, or deactivated. Inactive items remain readable for historical records.
+Users can manage requester types, categories, statuses, and evidence types. Items can be added, renamed, reordered with a drag handle, activated, or deactivated. New items are appended automatically; users never type a sort-order number. Dropping an item saves the complete order immediately, while a failed save restores the previous order. Inactive items remain readable for historical records.
 
 ### 7. Reports and Exports
 
@@ -71,6 +71,7 @@ The reports page should provide immediate shell/loading feedback while aggregate
 - Duplicate request numbers are rejected.
 - Soft-deleted requests are hidden from normal lists and reports.
 - Master data save returns users to the correct settings page.
+- Dragging master data saves a contiguous, duplicate-free order immediately; a failed save restores the previous order.
 - Attachments can be uploaded, listed, downloaded, and deleted when Blob credentials are configured.
 - Multiple attachments can be uploaded in one action, with file count and per-file size limits.
 - Image attachments show thumbnails, and document attachments show clear file-type cards.

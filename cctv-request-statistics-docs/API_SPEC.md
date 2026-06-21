@@ -134,6 +134,7 @@ GET /api/categories
 POST /api/categories
 PUT /api/categories/{id}
 PATCH /api/categories/{id}/deactivate
+PUT /api/categories/order
 ```
 
 Requester types:
@@ -142,6 +143,7 @@ GET /api/requester-types
 POST /api/requester-types
 PUT /api/requester-types/{id}
 PATCH /api/requester-types/{id}/deactivate
+PUT /api/requester-types/order
 ```
 
 Statuses:
@@ -150,6 +152,7 @@ GET /api/statuses
 POST /api/statuses
 PUT /api/statuses/{id}
 PATCH /api/statuses/{id}/deactivate
+PUT /api/statuses/order
 ```
 
 Evidence types:
@@ -158,7 +161,22 @@ GET /api/evidence-types
 POST /api/evidence-types
 PUT /api/evidence-types/{id}
 PATCH /api/evidence-types/{id}/deactivate
+PUT /api/evidence-types/order
 ```
+
+Order payload:
+```json
+{
+  "ordered_ids": [3, 1, 2]
+}
+```
+
+กติกาการเรียงลำดับ:
+- ต้องผ่าน Access Gate เช่นเดียวกับ mutation อื่น
+- `ordered_ids` ต้องมี ID ครบทุกแถวใน master table นั้นเพียงครั้งเดียว
+- ระบบเขียน `sort_order` ใหม่เป็น `1..N` ในคำสั่งเดียวและไม่รับเลขลำดับจากผู้ใช้
+- implementation ปัจจุบันเรียก authenticated Next.js Server Action จาก Client Component โดยมี semantics เทียบเท่า endpoint ด้านบน
+- ผลล้มเหลวต้องไม่ทิ้ง UI ไว้ในลำดับ optimistic ที่ยังไม่บันทึก
 
 ## 4. Attachments
 
