@@ -2,6 +2,17 @@
 
 # Changelog
 
+## 1.7.0 - Interactive Redesign Handoff
+### Added
+- เพิ่ม interactive prototype แบบ standalone สำหรับแบรนด์ `ศูนย์สถิติคำร้อง CCTV / CCTV Request Insights`
+- เพิ่มหน้าจอ desktop ครบตาม scope และ mobile core flow พร้อม design foundations และ component states
+- เพิ่ม clickable flow สำหรับเพิ่มคำร้อง, duplicate hint, success, แนบหลักฐาน, ค้นหา และแก้ไขคำร้อง
+- เพิ่ม `REDESIGN_HANDOFF.md` อธิบายขอบเขต วิธีเปิด และหลักฐาน browser QA
+
+### Notes
+- Prototype ใช้ข้อมูลสมมติ ไม่เชื่อม backend และไม่ถูกรวมใน production build
+- ไฟล์ Figma เก็บ foundations บางส่วนเท่านั้น เนื่องจาก Figma Starter Plan จำกัด MCP tool calls; standalone prototype เป็น artifact หลักสำหรับ review รอบนี้
+
 ## 1.6.0 - Master Data Drag Ordering
 ### Added
 - เพิ่ม drag handle สำหรับเรียงประเภทผู้ขอ หมวดหมู่ สถานะ และประเภทหลักฐานด้วยเมาส์ การสัมผัส และคีย์บอร์ด

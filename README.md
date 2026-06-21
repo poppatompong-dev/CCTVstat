@@ -2,6 +2,17 @@
 
 ระบบบันทึกสถิติการขอดูภาพจากกล้องวงจรปิด สำหรับใช้งานคู่กับใบคำร้องกระดาษเดิมของเทศบาล
 
+## Design Review Prototype
+
+งาน redesign ภายใต้ชื่อ **ศูนย์สถิติคำร้อง CCTV / CCTV Request Insights** อยู่ใน [`design-prototype/index.html`](design-prototype/index.html) เป็น interactive prototype แบบ standalone สำหรับ review และ developer handoff
+
+- เปิดด้วย browser ได้โดยตรง ไม่ต้องติดตั้ง dependency
+- สลับ Desktop/Mobile และหน้าจอหลักได้จาก studio rail
+- ทดสอบ flow เพิ่มคำร้องและค้นหา/แก้ไขได้โดยไม่เชื่อมฐานข้อมูล
+- Prototype ไม่ถูกนำเข้า production build และยังไม่เปลี่ยนชื่อหรือ UI ของ runtime ปัจจุบัน
+
+รายละเอียดขอบเขตและผลตรวจอยู่ที่ [`cctv-request-statistics-docs/REDESIGN_HANDOFF.md`](cctv-request-statistics-docs/REDESIGN_HANDOFF.md)
+
 ## Stack
 
 - Next.js App Router + TypeScript
