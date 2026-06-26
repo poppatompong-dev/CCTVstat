@@ -50,7 +50,7 @@ Environment ที่จำเป็นบน Vercel production:
 | `MAX_UPLOAD_FILES` | No | default 5 files per upload action |
 | `PERF_DB_PROBE` | No | ตั้งเป็น `1` เฉพาะตอน diagnostic เพื่อ log `SELECT 1` และ active request count; ไม่ควรเปิดค้างถ้าไม่ต้องวัด |
 | `E2E_FIXTURES_ENABLED` | No | ตั้งเป็น `1` เฉพาะ staging/preview ที่ใช้ automated E2E; จะ seed คำร้อง `C69-0003` พร้อม fixture attachment `test-private.pdf` ถ้ายังไม่มีไฟล์แนบ |
-| `AUTO_SCHEMA_INIT` | No | ตั้งเป็น `1` เพื่อให้ระบบตรวจสอบและสร้าง schema อัตโนมัติเมื่อ cold start; **ควรตั้งเป็น `1` เฉพาะการ deploy ครั้งแรก** หรือเมื่อมีการเปลี่ยนแปลง schema หลังจาก schema พร้อมใช้แล้วให้ตั้งกลับเป็น `0` หรือลบออก เพื่อลด round trip และเร่ง cold start |
+| `AUTO_SCHEMA_INIT` | No | default เป็น `1` (รัน schema init อัตโนมัติเสมอ); ตั้งเป็น `0` เพื่อข้ามการตรวจสอบ schema หลังยืนยันว่า schema พร้อมใช้แล้ว ลด round trip และเร่ง cold start |
 
 ห้ามเปิด `E2E_FIXTURES_ENABLED=1` ใน production จริง เพราะ flag นี้มีไว้สร้างข้อมูลทดสอบสำหรับ automation เท่านั้น
 

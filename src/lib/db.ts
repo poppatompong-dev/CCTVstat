@@ -51,11 +51,11 @@ const masterTables: MasterKind[] = [
 
 function autoSchemaInitEnabled() {
   const value = (process.env.AUTO_SCHEMA_INIT ?? "").toLowerCase();
-  if (value === "1" || value === "true" || value === "on") return true;
   if (value === "0" || value === "false" || value === "off") return false;
-  // Default: run automatically outside production to keep local/dev/staging frictionless,
-  // but skip the extra round trips in production (run once with AUTO_SCHEMA_INIT=1).
-  return process.env.NODE_ENV !== "production";
+  // Default: run schema initialization automatically everywhere.
+  // Set AUTO_SCHEMA_INIT=0 to skip the readiness round trip in production
+  // after confirming the schema is fully provisioned.
+  return true;
 }
 
 function assertMasterKind(kind: string): asserts kind is MasterKind {
