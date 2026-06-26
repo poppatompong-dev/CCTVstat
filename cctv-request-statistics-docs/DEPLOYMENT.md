@@ -30,6 +30,7 @@ SESSION_SECRET="..."
 MAX_UPLOAD_BYTES=4194304
 MAX_UPLOAD_FILES=5
 E2E_FIXTURES_ENABLED=0
+AUTO_SCHEMA_INIT=1
 REPORT_ORGANIZATION_NAME="กลุ่มงานสถิติข้อมูลและสารสนเทศ"
 FOLLOW_UP_DAYS=7
 ```
@@ -49,6 +50,7 @@ Environment ที่จำเป็นบน Vercel production:
 | `MAX_UPLOAD_FILES` | No | default 5 files per upload action |
 | `PERF_DB_PROBE` | No | ตั้งเป็น `1` เฉพาะตอน diagnostic เพื่อ log `SELECT 1` และ active request count; ไม่ควรเปิดค้างถ้าไม่ต้องวัด |
 | `E2E_FIXTURES_ENABLED` | No | ตั้งเป็น `1` เฉพาะ staging/preview ที่ใช้ automated E2E; จะ seed คำร้อง `C69-0003` พร้อม fixture attachment `test-private.pdf` ถ้ายังไม่มีไฟล์แนบ |
+| `AUTO_SCHEMA_INIT` | No | ตั้งเป็น `1` เพื่อให้ระบบตรวจสอบและสร้าง schema อัตโนมัติเมื่อ cold start; **ควรตั้งเป็น `1` เฉพาะการ deploy ครั้งแรก** หรือเมื่อมีการเปลี่ยนแปลง schema หลังจาก schema พร้อมใช้แล้วให้ตั้งกลับเป็น `0` หรือลบออก เพื่อลด round trip และเร่ง cold start |
 
 ห้ามเปิด `E2E_FIXTURES_ENABLED=1` ใน production จริง เพราะ flag นี้มีไว้สร้างข้อมูลทดสอบสำหรับ automation เท่านั้น
 
@@ -143,7 +145,14 @@ vercel env pull
 | Database | Neon backup/export |
 | Upload metadata | `request_attachments` table |
 | Upload files | Vercel Blob store |
+| Delivery records | `request_deliveries` table |
 | Config | Vercel env vars / `.env.local` |
+
+นอกจากนี้ระบบมี endpoint สำรองข้อมูลแบบ Excel:
+```http
+GET /api/backup
+```
+ไฟล์ Excel (version 2) ประกอบด้วย sheets: `requests`, `requester_types`, `categories`, `statuses`, `evidence_types`, `request_attachments`, `request_deliveries`, `delivery_item_types`
 
 ## 10. Restore
 1. Restore Neon data
@@ -158,4 +167,4 @@ vercel env pull
 - ไฟล์แนบดาวน์โหลดผ่าน endpoint ของระบบ
 - ห้าม commit secret
 - สำรองข้อมูลสม่ำเสมอ
-- หากมีผู้ใช้หลายคนพร้อมกัน ต้องทดสอบการออกเลขซ้ำ
+- หากมีผู้ใช้หลายคนพร้อมกัน ต้องทดสอบการออกเลขซ้ำ — ระบบใช้ตาราง `request_counters` แบบ atomic (`INSERT ... ON CONFLICT DO UPDATE`) เพื่อป้องกัน race condition

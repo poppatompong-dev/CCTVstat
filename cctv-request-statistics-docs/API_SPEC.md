@@ -9,6 +9,8 @@
 - statuses
 - evidence-types
 - attachments
+- deliveries
+- delivery-item-types
 - reports
 
 ## 2. Requests
@@ -207,7 +209,76 @@ GET /api/attachments/{attachment_id}/download
 DELETE /api/attachments/{attachment_id}
 ```
 
-## 4.1 Test Fixtures
+## 4.1 Deliveries
+
+### Add Delivery
+```http
+POST /api/requests/{request_id}/deliveries
+```
+
+Body:
+```json
+{
+  "delivery_item_type_id": 1,
+  "delivery_method": "อีเมล",
+  "recipient_name": "นาย สมชาย",
+  "delivered_at": "2026-06-20T10:00:00",
+  "note": "ส่งทางอีเมลแล้ว"
+}
+```
+
+Response:
+```json
+{
+  "id": 1,
+  "message": "บันทึกการส่งมอบสำเร็จ"
+}
+```
+
+implementation ปัจจุบันใช้ Server Action `addDeliveryAction`
+
+### List Deliveries
+```http
+GET /api/requests/{request_id}/deliveries
+```
+
+Response:
+```json
+{
+  "rows": [
+    {
+      "id": 1,
+      "delivery_item_type_id": 1,
+      "delivery_item_type_name": "ไฟล์วิดีโอจากกล้อง",
+      "delivery_method": "อีเมล",
+      "recipient_name": "นาย สมชาย",
+      "delivered_at": "2026-06-20T10:00:00",
+      "note": "ส่งทางอีเมลแล้ว",
+      "created_at": "2026-06-20T10:05:00"
+    }
+  ]
+}
+```
+
+### Delete Delivery
+```http
+DELETE /api/requests/{request_id}/deliveries/{delivery_id}
+```
+
+implementation ปัจจุบันใช้ Server Action `deleteDeliveryAction`
+
+### Delivery Item Types (Master Data)
+```http
+GET /api/delivery-item-types
+POST /api/delivery-item-types
+PUT /api/delivery-item-types/{id}
+PATCH /api/delivery-item-types/{id}/deactivate
+PUT /api/delivery-item-types/order
+```
+
+ใช้รูปแบบเดียวกับ master data อื่น ๆ (ดูหัวข้อ 3)
+
+## 4.2 Test Fixtures
 
 ใช้เฉพาะ automated E2E บน preview/staging ที่ตั้ง `E2E_FIXTURES_ENABLED=1` และต้องผ่าน shared password access gate แล้วเท่านั้น
 
@@ -271,7 +342,17 @@ GET /api/reports/export/backup
 GET /api/backup
 ```
 
-Response เป็นไฟล์ Excel หลาย sheet
+Response เป็นไฟล์ Excel หลาย sheet (version 2)
+
+Sheets:
+1. `requests`
+2. `requester_types`
+3. `categories`
+4. `statuses`
+5. `evidence_types`
+6. `request_attachments`
+7. `request_deliveries`
+8. `delivery_item_types`
 
 ## 6. Validation
 | Field | Rule |
@@ -281,6 +362,10 @@ Response เป็นไฟล์ Excel หลาย sheet
 | category_id | required |
 | status_id | required |
 | request_no | optional on correction/backfill, unique, format `CYY-NNNN`, fiscal year must match request_date |
+| delivery_item_type_id | required for delivery |
+| delivery_method | required for delivery, free text แต่มีค่าแนะนำ |
+| delivered_at | required for delivery, valid datetime |
+| recipient_name | optional for delivery |
 | file | optional |
 | file extension | allowed only |
 | file size | max size |

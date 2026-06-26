@@ -2,6 +2,32 @@
 
 # Changelog
 
+## 1.8.0 - Delivery Tracking and Database Performance (P4)
+### Added
+- เพิ่มตาราง `delivery_item_types` (master data) สำหรับจัดการประเภทข้อมูลที่ส่งมอบ พร้อม seed ค่าเริ่มต้น 5 รายการ
+- เพิ่มตาราง `request_deliveries` สำหรับบันทึกการส่งมอบข้อมูลให้ผู้ร้อง รองรับหลายรายการต่อคำร้อง
+- เพิ่มตาราง `request_counters` สำหรับการออกเลขคำร้องแบบ atomic กัน race condition ด้วย `INSERT ... ON CONFLICT DO UPDATE`
+- เพิ่มหน้าจัดการประเภทข้อมูลที่ส่งมอบ (`/settings/delivery-item-types`) ในเมนูนำทาง
+- เพิ่ม `DeliveryManager` component บนหน้ารายละเอียดคำร้อง สำหรับเพิ่ม/ลบรายการส่งมอบ
+- เพิ่มคอลัมน์ "ส่งมอบ" ในตารางรายการคำร้อง แสดงจำนวนรายการส่งมอบต่อคำร้อง
+- เพิ่ม insight tile "รายการส่งมอบ" และ bar list "ส่งมอบตามประเภทข้อมูล" และ "ส่งมอบตามช่องทาง" ในหน้ารายงาน
+- เพิ่มคอลัมน์ "ส่งมอบ" และตาราง "สรุปการส่งมอบข้อมูล" ในรายงานพิมพ์
+- เพิ่มคอลัมน์ "รายการส่งมอบ" ใน Excel export และ sheet "สรุปการส่งมอบ" แยก
+- เพิ่ม `request_deliveries` และ `delivery_item_types` ใน backup export (version 2)
+- เพิ่ม env var `AUTO_SCHEMA_INIT` สำหรับควบคุมการตรวจสอบ schema อัตโนมัติเมื่อ cold start
+
+### Changed
+- ปรับการออกเลขคำร้องจาก `MAX(sequence_no) + 1` เป็น `allocateSequenceNo()` แบบ atomic ผ่าน `request_counters`
+- ปรับ `requestSelect` ให้ใช้ correlated subqueries สำหรับ `attachment_count` และ `delivery_count` แทน full-table aggregate
+- รวม report aggregation queries หลายตัวเป็น `getRequestAggregates()` และ `getDeliveryAggregates()` ลด DB round trips
+- ปรับ `ensureSchema()` ให้ข้าม schema readiness check เมื่อ `AUTO_SCHEMA_INIT` ไม่ได้ตั้ง ลด cold start latency
+
+### Verified
+- `npx tsc --noEmit` ผ่าน
+- `npm.cmd run lint` ผ่าน
+- `npm.cmd run test` ผ่าน
+- `npm.cmd run build` ผ่าน
+
 ## 1.7.0 - Interactive Redesign Handoff
 ### Added
 - เพิ่ม interactive prototype แบบ standalone สำหรับแบรนด์ `ศูนย์สถิติคำร้อง CCTV / CCTV Request Insights`

@@ -9,6 +9,9 @@
 4. `statuses`
 5. `evidence_types`
 6. `request_attachments`
+7. `delivery_item_types`
+8. `request_deliveries`
+9. `request_counters`
 
 ## 1. requests
 | Field | Type | Required | Description |
@@ -108,10 +111,61 @@ Rule: `semantic_key` ใช้กับ logic ภายใน เช่น `rece
 | note | text | no | หมายเหตุ |
 | uploaded_at | datetime | yes | วันที่อัปโหลด |
 
+## 7. delivery_item_types
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| id | integer | yes | Primary key |
+| name | text | yes | ชื่อประเภทข้อมูลที่ส่งมอบ |
+| sort_order | integer | yes | ลำดับการแสดง |
+| is_active | boolean | yes | เปิด/ปิดใช้งาน |
+| created_at | datetime | yes | วันที่สร้าง |
+| updated_at | datetime | yes | วันที่แก้ไขล่าสุด |
+
+Rule: เป็น master table ใช้รูปแบบเดียวกับ requester_types ฯลฯ รองรับการเพิ่ม แก้ไข ปิดใช้งาน และลากเรียงลำดับ
+
+ประเภทข้อมูลที่ส่งมอบเริ่มต้น:
+1. ไฟล์วิดีโอจากกล้อง
+2. ภาพนิ่ง/ภาพถ่ายหน้าจอ
+3. รายงานผลการตรวจสอบ
+4. หนังสือแจ้งผล
+5. อื่น ๆ
+
+## 8. request_deliveries
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| id | integer | yes | Primary key |
+| request_id | integer | yes | FK ไป requests (CASCADE) |
+| delivery_item_type_id | integer | yes | FK ไป delivery_item_types |
+| delivery_method | text | yes | ช่องทางส่งมอบ เช่น รับด้วยตนเอง อีเมล ไลน์ |
+| recipient_name | text | no | ชื่อผู้รับ |
+| delivered_at | datetime | yes | วันที่ส่งมอบ |
+| note | text | no | หมายเหตุ |
+| created_at | datetime | yes | วันที่บันทึก |
+
+Rule:
+- หนึ่งคำร้องสามารถมีได้หลายรายการส่งมอบ
+- การลบคำร้อง (soft delete) จะไม่ลบรายการส่งมอบ แต่รายงานปกติจะไม่แสดงคำร้องที่ถูกลบ
+- `delivery_method` เป็นค่าอิสระ แต่มีค่าแนะนำในระบบ: รับด้วยตนเอง, อีเมล, ไลน์ (LINE), ไปรษณีย์, USB / แผ่นบันทึก, ระบบออนไลน์, อื่น ๆ
+- ช่องทางส่งมอบกำหนดใน `src/lib/delivery.ts` (DELIVERY_METHODS)
+
+## 9. request_counters
+| Field | Type | Required | Description |
+|---|---|---:|---|
+| fiscal_year | integer | yes | Primary key (ปีงบประมาณ พ.ศ.) |
+| last_sequence | integer | yes | เลขลำดับล่าสุดที่ออกแล้ว |
+| updated_at | datetime | yes | วันที่อัปเดตล่าสุด |
+
+Rule:
+- ใช้สำหรับการออกเลขคำร้องแบบ atomic (กัน race condition)
+- เมื่อเตรียม schema ระบบจะ seed ค่าเริ่มต้นจาก `MAX(sequence_no)` ของแต่ละปีงบประมาณที่มีอยู่
+- การออกเลขใช้ `INSERT ... ON CONFLICT DO UPDATE SET last_sequence = GREATEST(counter, max_existing) + 1` เพื่อรับประกันความ unique
+
 ## ความสัมพันธ์
 ```text
 requests 1 ---- many request_attachments
+requests 1 ---- many request_deliveries
 evidence_types 1 ---- many request_attachments
+delivery_item_types 1 ---- many request_deliveries
 categories 1 ---- many requests
 requester_types 1 ---- many requests
 statuses 1 ---- many requests
@@ -127,9 +181,11 @@ else:
     fiscal_year = buddhist_year
 
 yy = fiscal_year % 100
-sequence_no = max(sequence_no in fiscal_year) + 1
+sequence_no = allocateSequenceNo(fiscal_year)  // atomic via request_counters
 request_no = "C" + yy + "-" + sequence_no padded 4 digits
 ```
+
+การออกเลขใช้ตาราง `request_counters` เพื่อรับประกันความ unique แม้มีการบันทึกพร้อมกัน โดยใช้ `INSERT ... ON CONFLICT DO UPDATE` แบบ atomic ส่วน `nextRequestNumber` สำหรับ preview จะอ่านค่า `GREATEST(counter, max(sequence_no)) + 1` โดยไม่กลายเป็น counter
 
 สำหรับข้อมูลย้อนหลังหรือการแก้เลขโดยตรง ระบบควรรับเลข `CYY-NNNN` ที่ผู้ใช้กำหนดเองได้เมื่อไม่ซ้ำ และต้อง reject หาก `YY` ไม่ตรงกับปีงบประมาณที่คำนวณจาก `request_date`
 
