@@ -1,5 +1,15 @@
 # Design
 
+## Redesign Review Artifact
+
+ต้นแบบทิศทางถัดไปใช้ชื่อ **ศูนย์สถิติคำร้อง CCTV / CCTV Request Insights** และแนวทาง Modern Friendly, light mode, action-first โดยยังรักษาผลิตภัณฑ์ให้เป็นเครื่องมือสถิติที่เพิ่มคำร้องได้เร็ว ไม่ขยายเป็น case management
+
+- Interactive prototype: [`design-prototype/index.html`](design-prototype/index.html)
+- Handoff และหลักฐาน QA: [`cctv-request-statistics-docs/REDESIGN_HANDOFF.md`](cctv-request-statistics-docs/REDESIGN_HANDOFF.md)
+- Partial Figma foundations: [ศูนย์สถิติคำร้อง CCTV — Full Product Redesign](https://www.figma.com/design/MYZR5R8v6sqSknUhEmmNXO)
+
+Prototype เป็น artifact สำหรับ review เท่านั้น Design ด้านล่างยังอธิบาย production UI ปัจจุบันจนกว่าจะมีการอนุมัติและนำ redesign ไป implement จริง
+
 ## Theme
 
 เครื่องมือสถิติภายในเทศบาลที่ใช้งานกลางวันบนโต๊ะทำงานและหน้างาน: แสงจริง หน้าจอมือถือจริง ข้อมูลต้องอ่านทันที ความสวยมาจากความคมของลำดับชั้น ระยะหายใจ และสถานะที่ชัด ไม่ใช่ของตกแต่ง

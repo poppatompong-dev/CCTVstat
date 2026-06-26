@@ -49,6 +49,7 @@ async function NewRequestFormSection({ mastersPromise }: { mastersPromise: Promi
           status_name: "",
           status_semantic_key: null,
           attachment_count: 0,
+          delivery_count: 0,
         }}
       />
     </section>

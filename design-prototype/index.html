@@ -1,0 +1,76 @@
+<!doctype html>
+<html lang="th">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="color-scheme" content="light" />
+    <title>ศูนย์สถิติคำร้อง CCTV — Interactive Redesign Prototype</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body>
+    <div class="prototype-studio">
+      <aside class="studio-rail" aria-label="เครื่องมือเลือกหน้าจอ prototype">
+        <div class="studio-brand">
+          <span class="studio-mark" aria-hidden="true">CR</span>
+          <div>
+            <strong>CCTV Request Insights</strong>
+            <small>Interactive design handoff</small>
+          </div>
+        </div>
+
+        <div class="studio-group">
+          <span class="studio-label">Viewport</span>
+          <div class="viewport-switcher" role="group" aria-label="เลือกขนาดหน้าจอ">
+            <button class="studio-button active" type="button" data-viewport="desktop">Desktop</button>
+            <button class="studio-button" type="button" data-viewport="mobile">Mobile</button>
+          </div>
+        </div>
+
+        <nav class="screen-nav" aria-label="เลือกหน้าจอ">
+          <span class="studio-label">Design system</span>
+          <button type="button" data-screen="foundations">Brand & Foundations</button>
+          <button type="button" data-screen="components">Components & States</button>
+
+          <span class="studio-label">Product screens</span>
+          <button type="button" data-screen="login">เข้าสู่ระบบ</button>
+          <button class="active" type="button" data-screen="dashboard">Dashboard</button>
+          <button type="button" data-screen="new-request">เพิ่มคำร้อง</button>
+          <button type="button" data-screen="success">บันทึกสำเร็จ</button>
+          <button type="button" data-screen="search">ค้นหา / รายการ</button>
+          <button type="button" data-screen="edit">แก้ไขคำร้อง</button>
+          <button type="button" data-screen="attachments">แนบหลักฐาน</button>
+          <button type="button" data-screen="reports">รายงาน</button>
+          <button type="button" data-screen="master-data">Master Data</button>
+          <button type="button" data-screen="print">Print Report</button>
+        </nav>
+
+        <div class="studio-note">
+          <strong>Prototype only</strong>
+          <span>ข้อมูลทั้งหมดเป็นข้อมูลสมมติ ไม่มีการเชื่อมฐานข้อมูลหรือส่งข้อมูลจริง</span>
+        </div>
+      </aside>
+
+      <main class="studio-workspace">
+        <header class="studio-toolbar">
+          <div>
+            <strong id="screenTitle">Dashboard</strong>
+            <span id="screenMeta">Desktop · 1440px design target</span>
+          </div>
+          <div class="toolbar-actions">
+            <a href="https://www.figma.com/design/MYZR5R8v6sqSknUhEmmNXO" target="_blank" rel="noreferrer">Partial Figma foundations</a>
+            <button id="resetPrototype" type="button">Reset flow</button>
+          </div>
+        </header>
+
+        <div class="canvas" id="canvas">
+          <div class="device desktop" id="device">
+            <div id="prototypeRoot"></div>
+          </div>
+        </div>
+      </main>
+    </div>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>

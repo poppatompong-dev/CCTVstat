@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   ListChecks,
   LogOut,
+  PackageCheck,
   ShieldCheck,
   Tags,
   UsersRound,
@@ -23,6 +24,7 @@ const nav = [
   { href: "/settings/categories", label: "หมวดหมู่", icon: FolderKanban },
   { href: "/settings/statuses", label: "สถานะ", icon: ListChecks },
   { href: "/settings/evidence-types", label: "หลักฐาน", icon: Tags },
+  { href: "/settings/delivery-item-types", label: "ข้อมูลส่งมอบ", icon: PackageCheck },
 ];
 
 export function AppShell({ children }: { children: React.ReactNode }) {

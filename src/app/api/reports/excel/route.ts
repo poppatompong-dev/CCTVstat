@@ -34,6 +34,7 @@ export async function GET(request: Request) {
       "สถานะ": row.status_name,
       "สถานที่": row.location_text ?? "",
       "ไฟล์แนบ": row.attachment_count,
+      "รายการส่งมอบ": row.delivery_count,
       "หมายเหตุ": row.note ?? "",
     }));
 
@@ -42,13 +43,32 @@ export async function GET(request: Request) {
       { มิติ: "จำนวนคำร้องช่วงก่อนหน้า", ค่า: report.previousTotal },
       { มิติ: "เปลี่ยนแปลงเทียบช่วงก่อนหน้า (%)", ค่า: report.changePercent ?? "" },
       { มิติ: "อัตราพบภาพ (%)", ค่า: report.foundRate ?? "" },
+      { มิติ: "จำนวนรายการส่งมอบทั้งหมด", ค่า: report.deliveryTotal },
       ...report.byCategory.map((row) => ({ มิติ: `หมวดหมู่: ${row.name}`, ค่า: row.count })),
       ...report.byRequesterType.map((row) => ({ มิติ: `ประเภทผู้ขอ: ${row.name}`, ค่า: row.count })),
       ...report.byStatus.map((row) => ({ มิติ: `สถานะ: ${row.name}`, ค่า: row.count })),
     ];
 
+    const deliverySummary = [
+      ...report.byDeliveryItemType.map((row) => ({
+        มิติ: "ประเภทข้อมูล",
+        รายการ: row.name,
+        จำนวน: row.count,
+      })),
+      ...report.byDeliveryMethod.map((row) => ({
+        มิติ: "ช่องทางส่งมอบ",
+        รายการ: row.name,
+        จำนวน: row.count,
+      })),
+    ];
+
     utils.book_append_sheet(workbook, utils.json_to_sheet(summary), "สรุป");
     utils.book_append_sheet(workbook, utils.json_to_sheet(rows), "รายการคำร้อง");
+    utils.book_append_sheet(
+      workbook,
+      utils.json_to_sheet(deliverySummary.length ? deliverySummary : [{ มิติ: "", รายการ: "", จำนวน: "" }]),
+      "สรุปการส่งมอบ",
+    );
     utils.book_append_sheet(workbook, utils.json_to_sheet(report.monthlyTrend), "แนวโน้ม 6 เดือน");
 
     return write(workbook, { type: "buffer", bookType: "xlsx" }) as Buffer;

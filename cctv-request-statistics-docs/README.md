@@ -48,6 +48,7 @@ CYY-NNNN
 | `REQUIREMENTS.md` | ข้อกำหนดระบบ |
 | `DATA_MODEL.md` | โครงสร้างฐานข้อมูล |
 | `UI_SPEC.md` | รายละเอียดหน้าจอ |
+| `REDESIGN_HANDOFF.md` | Interactive redesign prototype, ขอบเขตหน้าจอ และหลักฐาน QA |
 | `ATTACHMENT_SPEC.md` | ข้อกำหนดการแนบหลักฐาน |
 | `REPORT_SPEC.md` | ข้อกำหนดรายงาน |
 | `API_SPEC.md` | แนวทาง API |

@@ -1,4 +1,9 @@
-export type MasterKind = "requester_types" | "categories" | "statuses" | "evidence_types";
+export type MasterKind =
+  | "requester_types"
+  | "categories"
+  | "statuses"
+  | "evidence_types"
+  | "delivery_item_types";
 
 export type MasterRow = {
   id: number;
@@ -26,6 +31,19 @@ export type RequestRow = {
   status_name: string;
   status_semantic_key: string | null;
   attachment_count: number;
+  delivery_count: number;
+};
+
+export type DeliveryRow = {
+  id: number;
+  request_id: number;
+  delivery_item_type_id: number;
+  delivery_item_type_name: string;
+  delivery_method: string;
+  recipient_name: string | null;
+  delivered_at: string;
+  note: string | null;
+  created_at: string;
 };
 
 export type AttachmentRow = {
@@ -74,6 +92,9 @@ export type ReportData = {
   byCategory: Array<{ name: string; count: number }>;
   byRequesterType: Array<{ name: string; count: number }>;
   byStatus: Array<{ name: string; count: number }>;
+  byDeliveryItemType: Array<{ name: string; count: number }>;
+  byDeliveryMethod: Array<{ name: string; count: number }>;
+  deliveryTotal: number;
   monthlyTrend: Array<{ month: string; count: number }>;
   rows: RequestRow[];
 };

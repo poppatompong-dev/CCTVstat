@@ -7,10 +7,11 @@ import {
   updateRequestAction,
   uploadAttachmentAction,
 } from "@/app/actions";
-import { getAttachments, getMasters, getRequest } from "@/lib/db";
+import { getAttachments, getDeliveries, getMasterRows, getMasters, getRequest } from "@/lib/db";
 import { perfLog, perfStart, timed } from "@/lib/perf";
 import { AttachmentGallery } from "@/components/AttachmentGallery";
 import { AttachmentUploadForm } from "@/components/AttachmentUploadForm";
+import { DeliveryManager } from "@/components/DeliveryManager";
 import { AppShell } from "@/components/AppShell";
 import { CopyButton } from "@/components/CopyButton";
 import { ConfirmSubmitButton } from "@/components/ConfirmSubmitButton";
@@ -35,10 +36,12 @@ export default async function RequestDetailPage({
     timed("/requests/[id] searchParams", () => searchParams),
   ]);
   const requestId = Number(id);
-  const [request, masters, attachments] = await Promise.all([
+  const [request, masters, attachments, deliveries, deliveryItemTypes] = await Promise.all([
     timed("/requests/[id] getRequest", () => getRequest(requestId)),
     timed("/requests/[id] getMasters", () => getMasters()),
     timed("/requests/[id] getAttachments", () => getAttachments(requestId)),
+    timed("/requests/[id] getDeliveries", () => getDeliveries(requestId)),
+    timed("/requests/[id] getDeliveryItemTypes", () => getMasterRows("delivery_item_types")),
   ]);
 
   if (!request) notFound();
@@ -94,6 +97,18 @@ export default async function RequestDetailPage({
         />
 
         <AttachmentGallery requestId={request.id} attachments={attachments} />
+      </section>
+
+      <section className="panel">
+        <div className="section-head">
+          <h2>การส่งมอบข้อมูล</h2>
+          <span className="muted">บันทึกว่าได้ส่งมอบข้อมูลใดให้ผู้ร้องไปแล้วบ้าง</span>
+        </div>
+        <DeliveryManager
+          requestId={request.id}
+          deliveries={deliveries}
+          deliveryItemTypes={deliveryItemTypes}
+        />
       </section>
 
       <section className="danger-zone">
