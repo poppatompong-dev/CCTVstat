@@ -49,6 +49,10 @@ export default async function PrintReportPage({ searchParams }: { searchParams: 
           <span>อัตราพบภาพ</span>
           <strong>{report.foundRate === null ? "-" : `${report.foundRate.toFixed(1)}%`}</strong>
         </div>
+        <div>
+          <span>รายการส่งมอบ</span>
+          <strong>{formatNumber(report.deliveryTotal)}</strong>
+        </div>
       </section>
       <table>
         <thead>
@@ -59,6 +63,7 @@ export default async function PrintReportPage({ searchParams }: { searchParams: 
             <th>หมวดหมู่</th>
             <th>สถานะ</th>
             <th>สถานที่</th>
+            <th>ส่งมอบ</th>
           </tr>
         </thead>
         <tbody>
@@ -70,10 +75,41 @@ export default async function PrintReportPage({ searchParams }: { searchParams: 
               <td>{row.category_name}</td>
               <td>{row.status_name}</td>
               <td>{optionalText(row.location_text)}</td>
+              <td>{formatNumber(row.delivery_count)}</td>
             </tr>
           ))}
         </tbody>
       </table>
+      {report.byDeliveryItemType.length || report.byDeliveryMethod.length ? (
+        <section className="print-delivery-summary">
+          <h2>สรุปการส่งมอบข้อมูล</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>มิติ</th>
+                <th>รายการ</th>
+                <th>จำนวน</th>
+              </tr>
+            </thead>
+            <tbody>
+              {report.byDeliveryItemType.map((row) => (
+                <tr key={`item-${row.name}`}>
+                  <td>ประเภทข้อมูล</td>
+                  <td>{row.name}</td>
+                  <td>{formatNumber(row.count)}</td>
+                </tr>
+              ))}
+              {report.byDeliveryMethod.map((row) => (
+                <tr key={`method-${row.name}`}>
+                  <td>ช่องทางส่งมอบ</td>
+                  <td>{row.name}</td>
+                  <td>{formatNumber(row.count)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </section>
+      ) : null}
       <section className="signature-block">
         <div>
           <p>ผู้จัดทำรายงาน</p>

@@ -161,6 +161,11 @@ async function ReportResults({
           <strong>{report.foundRate === null ? "-" : `${report.foundRate.toFixed(1)}%`}</strong>
           <small>จากสถานะพบภาพและไม่พบภาพ</small>
         </div>
+        <div className="insight-tile">
+          <span>รายการส่งมอบ</span>
+          <strong>{formatNumber(report.deliveryTotal)}</strong>
+          <small>จำนวนข้อมูลที่ส่งมอบให้ผู้ร้อง</small>
+        </div>
         <div className="export-actions">
           <a className="btn outline" href={`/api/reports/excel?${query}`}>
             <Download size={18} />
@@ -193,6 +198,14 @@ async function ReportResults({
         <div className="panel">
           <h2>ตามสถานะ</h2>
           <BarList data={report.byStatus} />
+        </div>
+        <div className="panel">
+          <h2>ส่งมอบตามประเภทข้อมูล</h2>
+          <BarList data={report.byDeliveryItemType} />
+        </div>
+        <div className="panel">
+          <h2>ส่งมอบตามช่องทาง</h2>
+          <BarList data={report.byDeliveryMethod} />
         </div>
       </section>
 

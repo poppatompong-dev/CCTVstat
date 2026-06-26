@@ -10,6 +10,7 @@ import { e2eFixtureBlobUrl, e2eFixturesEnabled, fixturePdfBody } from "@/lib/att
 import type {
   AttachmentRow,
   DashboardStats,
+  DeliveryRow,
   MasterKind,
   MasterRow,
   ReportData,
@@ -45,7 +46,17 @@ const masterTables: MasterKind[] = [
   "categories",
   "statuses",
   "evidence_types",
+  "delivery_item_types",
 ];
+
+function autoSchemaInitEnabled() {
+  const value = (process.env.AUTO_SCHEMA_INIT ?? "").toLowerCase();
+  if (value === "1" || value === "true" || value === "on") return true;
+  if (value === "0" || value === "false" || value === "off") return false;
+  // Default: run automatically outside production to keep local/dev/staging frictionless,
+  // but skip the extra round trips in production (run once with AUTO_SCHEMA_INIT=1).
+  return process.env.NODE_ENV !== "production";
+}
 
 function assertMasterKind(kind: string): asserts kind is MasterKind {
   if (!masterTables.includes(kind as MasterKind)) {
@@ -149,6 +160,27 @@ async function initializeSchema() {
     )
   `);
 
+  await query(`
+    CREATE TABLE IF NOT EXISTS request_deliveries (
+      id SERIAL PRIMARY KEY,
+      request_id INTEGER NOT NULL REFERENCES requests(id) ON DELETE CASCADE,
+      delivery_item_type_id INTEGER NOT NULL REFERENCES delivery_item_types(id),
+      delivery_method TEXT NOT NULL,
+      recipient_name TEXT,
+      delivered_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+      note TEXT,
+      created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
+  await query(`
+    CREATE TABLE IF NOT EXISTS request_counters (
+      fiscal_year INTEGER PRIMARY KEY,
+      last_sequence INTEGER NOT NULL DEFAULT 0,
+      updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+    )
+  `);
+
   await query("ALTER TABLE statuses ADD COLUMN IF NOT EXISTS semantic_key TEXT");
   await query("CREATE UNIQUE INDEX IF NOT EXISTS statuses_semantic_key_unique ON statuses (semantic_key) WHERE semantic_key IS NOT NULL");
   await query("CREATE INDEX IF NOT EXISTS requests_active_date_idx ON requests (request_date DESC, id DESC) WHERE deleted_at IS NULL");
@@ -159,6 +191,9 @@ async function initializeSchema() {
   await query("CREATE INDEX IF NOT EXISTS requests_active_status_idx ON requests (status_id) WHERE deleted_at IS NULL");
   await query("CREATE INDEX IF NOT EXISTS requests_active_category_date_idx ON requests (category_id, request_date DESC) WHERE deleted_at IS NULL");
   await query("CREATE INDEX IF NOT EXISTS request_attachments_request_id_idx ON request_attachments (request_id)");
+  await query("CREATE INDEX IF NOT EXISTS request_deliveries_request_id_idx ON request_deliveries (request_id)");
+  await query("CREATE INDEX IF NOT EXISTS request_deliveries_item_type_idx ON request_deliveries (delivery_item_type_id)");
+  await query("CREATE INDEX IF NOT EXISTS request_deliveries_method_idx ON request_deliveries (delivery_method)");
 
   await seedMaster("requester_types", [
     { name: "ประชาชน", sortOrder: 1 },
@@ -193,9 +228,27 @@ async function initializeSchema() {
     { name: "รูปภาพประกอบ", sortOrder: 5 },
     { name: "อื่น ๆ", sortOrder: 6 },
   ]);
+  await seedMaster("delivery_item_types", [
+    { name: "ไฟล์วิดีโอจากกล้อง", sortOrder: 1 },
+    { name: "ภาพนิ่ง/ภาพถ่ายหน้าจอ", sortOrder: 2 },
+    { name: "รายงานผลการตรวจสอบ", sortOrder: 3 },
+    { name: "หนังสือแจ้งผล", sortOrder: 4 },
+    { name: "อื่น ๆ", sortOrder: 5 },
+  ]);
   await deactivateDeprecated("categories", ["คดีอาชญากรรม", "เหตุเดือดร้อนรำคาญ"]);
   await deactivateDeprecated("statuses", ["ยกเลิก"]);
 
+  // Seed the atomic request-number counter from existing data so legacy fiscal
+  // years keep counting from their current maximum sequence.
+  await query(`
+    INSERT INTO request_counters (fiscal_year, last_sequence)
+    SELECT fiscal_year, MAX(sequence_no)
+    FROM requests
+    GROUP BY fiscal_year
+    ON CONFLICT (fiscal_year)
+    DO UPDATE SET last_sequence = GREATEST(request_counters.last_sequence, EXCLUDED.last_sequence),
+      updated_at = NOW()
+  `);
 }
 
 async function normalizeStoredMasterOrders() {
@@ -207,6 +260,8 @@ async function normalizeStoredMasterOrders() {
     SELECT 'statuses'::text AS kind, id, sort_order FROM statuses
     UNION ALL
     SELECT 'evidence_types'::text AS kind, id, sort_order FROM evidence_types
+    UNION ALL
+    SELECT 'delivery_item_types'::text AS kind, id, sort_order FROM delivery_item_types
     ORDER BY kind, sort_order, id
   `);
 
@@ -231,8 +286,11 @@ async function schemaLooksInitialized() {
       AND to_regclass('public.categories') IS NOT NULL
       AND to_regclass('public.statuses') IS NOT NULL
       AND to_regclass('public.evidence_types') IS NOT NULL
+      AND to_regclass('public.delivery_item_types') IS NOT NULL
       AND to_regclass('public.requests') IS NOT NULL
       AND to_regclass('public.request_attachments') IS NOT NULL
+      AND to_regclass('public.request_deliveries') IS NOT NULL
+      AND to_regclass('public.request_counters') IS NOT NULL
       AND EXISTS (
         SELECT 1
         FROM information_schema.columns
@@ -249,6 +307,9 @@ async function schemaLooksInitialized() {
       AND to_regclass('public.requests_active_status_idx') IS NOT NULL
       AND to_regclass('public.requests_active_category_date_idx') IS NOT NULL
       AND to_regclass('public.request_attachments_request_id_idx') IS NOT NULL
+      AND to_regclass('public.request_deliveries_request_id_idx') IS NOT NULL
+      AND to_regclass('public.request_deliveries_item_type_idx') IS NOT NULL
+      AND to_regclass('public.request_deliveries_method_idx') IS NOT NULL
     ) AS ready
   `);
   return Boolean(rows[0]?.ready);
@@ -398,12 +459,19 @@ export async function markE2EAttachmentFixtureDeleted() {
 export async function ensureSchema() {
   return timed("ensureSchema", async () => {
     if (!schemaReady) {
-      schemaReadyPromise ??= initializeSchemaIfNeeded().catch((error) => {
-        schemaReadyPromise = null;
-        throw error;
-      });
+      if (!autoSchemaInitEnabled()) {
+        // Production fast path: assume the schema was provisioned out-of-band
+        // (deploy/migration step with AUTO_SCHEMA_INIT=1). Skip the readiness
+        // round trip so hot requests do not pay for schema checks.
+        schemaReady = true;
+      } else {
+        schemaReadyPromise ??= initializeSchemaIfNeeded().catch((error) => {
+          schemaReadyPromise = null;
+          throw error;
+        });
 
-      await schemaReadyPromise;
+        await schemaReadyPromise;
+      }
     }
 
     if (e2eFixturesEnabled()) {
@@ -558,16 +626,12 @@ const requestSelect = `
     c.name AS category_name,
     s.name AS status_name,
     s.semantic_key AS status_semantic_key,
-    COALESCE(ac.attachment_count, 0)::int AS attachment_count
+    (SELECT COUNT(*)::int FROM request_attachments a WHERE a.request_id = r.id) AS attachment_count,
+    (SELECT COUNT(*)::int FROM request_deliveries d WHERE d.request_id = r.id) AS delivery_count
   FROM requests r
   JOIN requester_types rt ON rt.id = r.requester_type_id
   JOIN categories c ON c.id = r.category_id
   JOIN statuses s ON s.id = r.status_id
-  LEFT JOIN (
-    SELECT request_id, COUNT(*)::int AS attachment_count
-    FROM request_attachments
-    GROUP BY request_id
-  ) ac ON ac.request_id = r.id
 `;
 
 export async function listRequests(filters: RequestFilters = {}, limit = 80) {
@@ -698,10 +762,13 @@ function followUpDays() {
 export async function nextRequestNumber(requestDate: string) {
   await ensureSchema();
   const fiscalYear = fiscalYearFromDate(requestDate);
+  // Preview only: never mutates the counter. Reflect whichever is ahead between
+  // the atomic counter and the live max sequence so the hint matches allocation.
   const [{ next_sequence }] = await query<{ next_sequence: number }>(
-    `SELECT COALESCE(MAX(sequence_no), 0)::int + 1 AS next_sequence
-     FROM requests
-     WHERE fiscal_year = $1`,
+    `SELECT GREATEST(
+       COALESCE((SELECT last_sequence FROM request_counters WHERE fiscal_year = $1), 0),
+       COALESCE((SELECT MAX(sequence_no) FROM requests WHERE fiscal_year = $1), 0)
+     )::int + 1 AS next_sequence`,
     [fiscalYear],
   );
   return {
@@ -709,6 +776,27 @@ export async function nextRequestNumber(requestDate: string) {
     sequenceNo: next_sequence,
     requestNo: formatRequestNo(requestDate, next_sequence),
   };
+}
+
+async function allocateSequenceNo(fiscalYear: number) {
+  // Atomic, race-free allocation. Seeds from the live max sequence when a
+  // fiscal year is first allocated so legacy rows are never reused.
+  const [{ last_sequence }] = await query<{ last_sequence: number }>(
+    `INSERT INTO request_counters AS rc (fiscal_year, last_sequence)
+     VALUES (
+       $1,
+       COALESCE((SELECT MAX(sequence_no) FROM requests WHERE fiscal_year = $1), 0) + 1
+     )
+     ON CONFLICT (fiscal_year)
+     DO UPDATE SET last_sequence = GREATEST(
+         rc.last_sequence,
+         COALESCE((SELECT MAX(sequence_no) FROM requests WHERE fiscal_year = rc.fiscal_year), 0)
+       ) + 1,
+       updated_at = NOW()
+     RETURNING last_sequence`,
+    [fiscalYear],
+  );
+  return last_sequence;
 }
 
 export async function getSmartDefaults(): Promise<SmartDefaults> {
@@ -803,8 +891,11 @@ export async function createRequest(form: FormData) {
     note: String(form.get("note") || "").trim() || null,
   };
 
+  const fiscalYear = fiscalYearFromDate(requestDate);
+
   for (let attempt = 0; attempt < 3; attempt += 1) {
-    const generated = await nextRequestNumber(requestDate);
+    const sequenceNo = await allocateSequenceNo(fiscalYear);
+    const requestNo = formatRequestNo(requestDate, sequenceNo);
     try {
       const rows = await query<{ id: number; request_no: string }>(
         `INSERT INTO requests (
@@ -814,10 +905,10 @@ export async function createRequest(form: FormData) {
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
         RETURNING id, request_no`,
         [
-          generated.requestNo,
+          requestNo,
           requestDate,
-          generated.fiscalYear,
-          generated.sequenceNo,
+          fiscalYear,
+          sequenceNo,
           base.requesterTypeId,
           base.categoryId,
           base.statusId,
@@ -932,7 +1023,53 @@ export async function deleteAttachmentRecord(id: number) {
   await query("DELETE FROM request_attachments WHERE id = $1", [id]);
 }
 
-type CountRow = { name: string; count: number };
+const deliverySelect = `
+  SELECT d.id, d.request_id, d.delivery_item_type_id,
+    dit.name AS delivery_item_type_name,
+    d.delivery_method, d.recipient_name, d.delivered_at::text, d.note, d.created_at::text
+  FROM request_deliveries d
+  JOIN delivery_item_types dit ON dit.id = d.delivery_item_type_id
+`;
+
+export async function getDeliveries(requestId: number) {
+  await ensureSchema();
+  return query<DeliveryRow>(
+    `${deliverySelect}
+     WHERE d.request_id = $1
+     ORDER BY d.delivered_at DESC, d.id DESC`,
+    [requestId],
+  );
+}
+
+export async function insertDelivery(data: {
+  requestId: number;
+  deliveryItemTypeId: number;
+  deliveryMethod: string;
+  recipientName?: string | null;
+  deliveredAt?: string | null;
+  note?: string | null;
+}) {
+  await ensureSchema();
+  await query(
+    `INSERT INTO request_deliveries (
+      request_id, delivery_item_type_id, delivery_method, recipient_name, delivered_at, note
+    )
+    VALUES ($1, $2, $3, $4, COALESCE($5::timestamptz, NOW()), $6)`,
+    [
+      data.requestId,
+      data.deliveryItemTypeId,
+      data.deliveryMethod,
+      data.recipientName ?? null,
+      data.deliveredAt || null,
+      data.note ?? null,
+    ],
+  );
+}
+
+export async function deleteDeliveryRecord(requestId: number, id: number) {
+  await ensureSchema();
+  await query("DELETE FROM request_deliveries WHERE id = $1 AND request_id = $2", [id, requestId]);
+}
 
 async function countRequests(filters: RequestFilters) {
   const { where, params } = filtersToWhere(filters);
@@ -946,60 +1083,97 @@ async function countRequests(filters: RequestFilters) {
   return total;
 }
 
-async function countByRequesterType(filters: RequestFilters) {
+type DimCountRow = { dim: string; name: string; count: number };
+
+// Single round trip for every request-scoped aggregate the report needs:
+// total + found/not-found stats plus the requester/category/status breakdowns.
+async function getRequestAggregates(filters: RequestFilters) {
   const { where, params } = filtersToWhere(filters);
-  return query<CountRow>(
-    `SELECT rt.name, COUNT(*)::int AS count
-     FROM requests r
-     JOIN requester_types rt ON rt.id = r.requester_type_id
-     JOIN statuses s ON s.id = r.status_id
-     WHERE ${where}
-     GROUP BY rt.name
-     ORDER BY count DESC, rt.name`,
+  const rows = await query<DimCountRow>(
+    `WITH filtered AS (
+       SELECT r.requester_type_id, r.category_id, r.status_id, s.semantic_key
+       FROM requests r
+       JOIN statuses s ON s.id = r.status_id
+       WHERE ${where}
+     )
+     SELECT '__stats' AS dim, 'total' AS name, COUNT(*)::int AS count FROM filtered
+     UNION ALL
+     SELECT '__stats', 'found', COUNT(*) FILTER (WHERE semantic_key = 'found')::int FROM filtered
+     UNION ALL
+     SELECT '__stats', 'not_found', COUNT(*) FILTER (WHERE semantic_key = 'not_found')::int FROM filtered
+     UNION ALL
+     SELECT 'requester', rt.name, COUNT(*)::int
+       FROM filtered f JOIN requester_types rt ON rt.id = f.requester_type_id
+       GROUP BY rt.name
+     UNION ALL
+     SELECT 'category', c.name, COUNT(*)::int
+       FROM filtered f JOIN categories c ON c.id = f.category_id
+       GROUP BY c.name
+     UNION ALL
+     SELECT 'status', s2.name, COUNT(*)::int
+       FROM filtered f JOIN statuses s2 ON s2.id = f.status_id
+       GROUP BY s2.name`,
     params,
   );
+
+  const byDim = (dim: string) =>
+    rows
+      .filter((row) => row.dim === dim)
+      .map((row) => ({ name: row.name, count: row.count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "th"));
+
+  const stat = (name: string) =>
+    rows.find((row) => row.dim === "__stats" && row.name === name)?.count ?? 0;
+
+  const found = stat("found");
+  const notFound = stat("not_found");
+  const denominator = found + notFound;
+
+  return {
+    total: stat("total"),
+    foundRate: denominator ? (found / denominator) * 100 : null,
+    byRequesterType: byDim("requester"),
+    byCategory: byDim("category"),
+    byStatus: byDim("status"),
+  };
 }
 
-async function countByCategory(filters: RequestFilters) {
+// Single round trip for delivery-scoped aggregates within the same filter.
+async function getDeliveryAggregates(filters: RequestFilters) {
   const { where, params } = filtersToWhere(filters);
-  return query<CountRow>(
-    `SELECT c.name, COUNT(*)::int AS count
-     FROM requests r
-     JOIN categories c ON c.id = r.category_id
-     JOIN statuses s ON s.id = r.status_id
-     WHERE ${where}
-     GROUP BY c.name
-     ORDER BY count DESC, c.name`,
+  const rows = await query<DimCountRow>(
+    `WITH filtered AS (
+       SELECT r.id
+       FROM requests r
+       JOIN statuses s ON s.id = r.status_id
+       WHERE ${where}
+     )
+     SELECT '__stats' AS dim, 'total' AS name, COUNT(*)::int AS count
+       FROM request_deliveries d JOIN filtered f ON f.id = d.request_id
+     UNION ALL
+     SELECT 'item', dit.name, COUNT(*)::int
+       FROM request_deliveries d
+       JOIN filtered f ON f.id = d.request_id
+       JOIN delivery_item_types dit ON dit.id = d.delivery_item_type_id
+       GROUP BY dit.name
+     UNION ALL
+     SELECT 'method', d.delivery_method, COUNT(*)::int
+       FROM request_deliveries d JOIN filtered f ON f.id = d.request_id
+       GROUP BY d.delivery_method`,
     params,
   );
-}
 
-async function countByStatus(filters: RequestFilters) {
-  const { where, params } = filtersToWhere(filters);
-  return query<CountRow>(
-    `SELECT s.name, COUNT(*)::int AS count
-     FROM requests r
-     JOIN statuses s ON s.id = r.status_id
-     WHERE ${where}
-     GROUP BY s.name
-     ORDER BY count DESC, s.name`,
-    params,
-  );
-}
+  const byDim = (dim: string) =>
+    rows
+      .filter((row) => row.dim === dim)
+      .map((row) => ({ name: row.name, count: row.count }))
+      .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, "th"));
 
-async function foundRate(filters: RequestFilters) {
-  const { where, params } = filtersToWhere(filters);
-  const [{ found, not_found }] = await query<{ found: number; not_found: number }>(
-    `SELECT
-       COUNT(*) FILTER (WHERE s.semantic_key = 'found')::int AS found,
-       COUNT(*) FILTER (WHERE s.semantic_key = 'not_found')::int AS not_found
-     FROM requests r
-     JOIN statuses s ON s.id = r.status_id
-     WHERE ${where}`,
-    params,
-  );
-  const denominator = found + not_found;
-  return denominator ? (found / denominator) * 100 : null;
+  return {
+    deliveryTotal: rows.find((row) => row.dim === "__stats")?.count ?? 0,
+    byDeliveryItemType: byDim("item"),
+    byDeliveryMethod: byDim("method"),
+  };
 }
 
 async function monthlyTrend() {
@@ -1020,36 +1194,33 @@ export async function getReport(filters: RequestFilters): Promise<ReportData> {
     const previousFilters = previousPeriodFilters(filters);
     const [
       rows,
-      total,
+      aggregates,
+      deliveryAggregates,
       previousTotal,
-      rate,
-      byCategory,
-      byRequesterType,
-      byStatus,
       trendRows,
     ] = await Promise.all([
       timed("getReport detail rows", () => listRequests(filters, 1000)),
-      timed("getReport current total", () => countRequests(filters)),
+      timed("getReport request aggregates", () => getRequestAggregates(filters)),
+      timed("getReport delivery aggregates", () => getDeliveryAggregates(filters)),
       previousFilters
         ? timed("getReport previous total", () => countRequests(previousFilters))
         : Promise.resolve(0),
-      timed("getReport found rate", () => foundRate(filters)),
-      timed("getReport by category", () => countByCategory(filters)),
-      timed("getReport by requester type", () => countByRequesterType(filters)),
-      timed("getReport by status", () => countByStatus(filters)),
       timed("getReport monthly trend", () => monthlyTrend()),
     ]);
 
     return {
-      total,
+      total: aggregates.total,
       previousTotal,
       changePercent: previousTotal
-        ? ((total - previousTotal) / previousTotal) * 100
+        ? ((aggregates.total - previousTotal) / previousTotal) * 100
         : null,
-      foundRate: rate,
-      byCategory,
-      byRequesterType,
-      byStatus,
+      foundRate: aggregates.foundRate,
+      byCategory: aggregates.byCategory,
+      byRequesterType: aggregates.byRequesterType,
+      byStatus: aggregates.byStatus,
+      byDeliveryItemType: deliveryAggregates.byDeliveryItemType,
+      byDeliveryMethod: deliveryAggregates.byDeliveryMethod,
+      deliveryTotal: deliveryAggregates.deliveryTotal,
       monthlyTrend: trendRows,
       rows,
     };

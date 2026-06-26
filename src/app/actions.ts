@@ -9,9 +9,11 @@ import { isFixtureBlobUrl } from "@/lib/attachment-fixtures";
 import {
   createRequest,
   deleteAttachmentRecord,
+  deleteDeliveryRecord,
   findRequestNumberConflict,
   getAttachment,
   insertAttachment,
+  insertDelivery,
   markE2EAttachmentFixtureDeleted,
   reorderMaster,
   softDeleteRequest,
@@ -19,6 +21,7 @@ import {
   upsertMaster,
 } from "@/lib/db";
 import { validateRequestNoForDate } from "@/lib/dates";
+import { normalizeDeliveryMethod } from "@/lib/delivery";
 import type { MasterKind } from "@/lib/types";
 
 const allowedFileExt = new Set(["pdf", "jpg", "jpeg", "png", "doc", "docx"]);
@@ -50,6 +53,8 @@ function masterSettingsPath(kind: MasterKind) {
       return "/settings/statuses";
     case "evidence_types":
       return "/settings/evidence-types";
+    case "delivery_item_types":
+      return "/settings/delivery-item-types";
   }
 }
 
@@ -226,6 +231,45 @@ export async function uploadAttachmentAction(requestId: number, requestNo: strin
 
   revalidatePath(`/requests/${requestId}`);
   message(`/requests/${requestId}`, `อัปโหลดหลักฐานสำเร็จ ${files.length} ไฟล์`);
+}
+
+export async function addDeliveryAction(requestId: number, formData: FormData) {
+  await requireAuth();
+  const deliveryItemTypeId = Number(formData.get("delivery_item_type_id"));
+  const deliveryMethod = normalizeDeliveryMethod(String(formData.get("delivery_method") || ""));
+  const recipientName = String(formData.get("recipient_name") || "").trim() || null;
+  const deliveredAt = String(formData.get("delivered_at") || "").trim() || null;
+  const note = String(formData.get("note") || "").trim() || null;
+
+  if (!Number.isInteger(deliveryItemTypeId) || deliveryItemTypeId <= 0) {
+    message(`/requests/${requestId}`, "กรุณาเลือกประเภทข้อมูลที่ส่งมอบ", "error");
+  }
+  if (!deliveryMethod) {
+    message(`/requests/${requestId}`, "กรุณาเลือกช่องทางส่งมอบ", "error");
+  }
+
+  try {
+    await insertDelivery({
+      requestId,
+      deliveryItemTypeId,
+      deliveryMethod,
+      recipientName,
+      deliveredAt,
+      note,
+    });
+  } catch {
+    message(`/requests/${requestId}`, "บันทึกการส่งมอบไม่สำเร็จ", "error");
+  }
+
+  revalidatePath(`/requests/${requestId}`);
+  message(`/requests/${requestId}`, "บันทึกการส่งมอบแล้ว");
+}
+
+export async function deleteDeliveryAction(requestId: number, deliveryId: number) {
+  await requireAuth();
+  await deleteDeliveryRecord(requestId, deliveryId);
+  revalidatePath(`/requests/${requestId}`);
+  message(`/requests/${requestId}`, "ลบรายการส่งมอบแล้ว");
 }
 
 export async function deleteAttachmentAction(requestId: number, attachmentId: number) {

@@ -32,6 +32,7 @@ export function RequestList({ rows }: { rows: RequestRow[] }) {
             <th>สถานะ</th>
             <th>สถานที่</th>
             <th>ไฟล์</th>
+            <th>ส่งมอบ</th>
             <th>จัดการ</th>
           </tr>
         </thead>
@@ -49,6 +50,7 @@ export function RequestList({ rows }: { rows: RequestRow[] }) {
               </td>
               <td data-label="สถานที่">{optionalText(row.location_text)}</td>
               <td data-label="ไฟล์">{row.attachment_count}</td>
+              <td data-label="ส่งมอบ">{row.delivery_count}</td>
               <td data-label="จัดการ">
                 <Link className="btn small outline" href={`/requests/${row.id}`}>
                   <Edit3 size={15} aria-hidden="true" />
